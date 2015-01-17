@@ -13,7 +13,6 @@ def buildWiki(javadocs=None):
     wiki = Wiki(wikidir)
     
     if javadocs:
-        wiki.buildGraph(javadocs)
         wiki.buildDocs(javadocs)
 
 '''
@@ -37,15 +36,6 @@ def collateData(files):
     return javadocs
 
 if __name__ == '__main__':
-    #print getClasses(open(path.join(REPODIR, 'Test.java'), 'r'))
-    '''
-    for javadoc in getJavadocs(open(path.join(REPODIR, 'Test.java'), 'r')):
-        print javadoc
-    '''
-    '''
-    for javadoc in genJavadocGraph(REPODIR):
-        print javadoc
-    '''
     graph = JavadocGraph(REPODIR)
     for javadoc in graph.getTopLevelClasses():
         methods = list(graph.getMethods(javadoc))
