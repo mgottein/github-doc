@@ -4,6 +4,7 @@ Created on Jan 16, 2015
 @author: Dan Green
 '''
 
+from os import path
 from javadoc_parser import *
 
 def collateData(repodir):
@@ -12,5 +13,6 @@ def collateData(repodir):
     print tags, text
 
 if __name__ == '__main__':
-    repodir = 'C:\Users\Dan\Documents\GitHub\github-doc\testapp'
+    repodir = path.dirname(path.realpath(__file__)) + '\\testapp'
     collateData(repodir)
+    print repodir
