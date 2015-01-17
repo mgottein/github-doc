@@ -169,7 +169,7 @@ class JavadocComment:
         else:
             self.sourceLine = None
         lines = text.splitlines()[1:-1]
-        strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
+        strippedLines = [JavadocComment.commentStripRe.sub('', line) for line in lines]
         self.mainDesc = None
         self.blockTags = []
         curBlockTagText = None
