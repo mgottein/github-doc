@@ -35,7 +35,7 @@ class Wiki:
     Use the java docs to implement the wiki pages
     '''
     def buildDocs(self, javadocs):
-        currentClass = None
+        currentClass = 'DEFAULT'
         for javadoc in javadocs:
             text = ''
             if isinstance(javadoc.sourceLine, ClassLine):
