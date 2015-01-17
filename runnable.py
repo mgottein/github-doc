@@ -1,11 +1,16 @@
-'''
-Created on Jan 16, 2015
-
-@author: Dan Green
-'''
-
 from os import path
 from javadoc_parser import *
+from wikibuilder import *
+
+APPNAME = 'testapp'
+REPODIR = ''
+
+def buildWiki():
+    wikidir = REPODIR + '\\' + APPNAME + '.wiki\\'
+    wiki = Wiki(wikidir)
+    wiki.create()
+    wiki.setTag('title', 'TEST TITLE')
+    wiki.setTag('subtitle', 'test subtitle')
 
 def collateData(repodir):
     javadocs = getJavadocText(open(path.join(repodir, 'Test.java'), 'r'))
@@ -13,5 +18,6 @@ def collateData(repodir):
         print JavadocComment(javadoc)
 
 if __name__ == '__main__':
-    repodir = path.join(path.dirname(path.realpath(__file__)), 'testapp')
-    collateData(repodir)
+    REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
+    #collateData()
+    buildWiki()
