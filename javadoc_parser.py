@@ -409,9 +409,11 @@ def getJavadocs(f):
                     if depth == 0:
                         sourceBoundsEnd = java.count(os.linesep, 0, bracketM.end())
                         break
-            while len(classStack) > 0 and sourceBoundsStart > classStack[-1].getBounds()[1]:
-                classStack.pop()
-            javadocComment = JavadocComment(Context(package, list(classStack)), javadocText, (startLine, endLine), sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd)))
-            if isinstance(javadocComment.getSourceLine(), ClassLine):
-                classStack.append(javadocComment.getSourceLine())
-            yield javadocComment
+            sourceLine = sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd))
+            if sourceLine:
+                while len(classStack) > 0 and sourceBoundsStart > classStack[-1].getBounds()[1]:
+                    classStack.pop()
+                javadocComment = JavadocComment(Context(package, list(classStack)), javadocText, (startLine, endLine), sourceLine)
+                if isinstance(javadocComment.getSourceLine(), ClassLine):
+                    classStack.append(javadocComment.getSourceLine())
+                yield javadocComment
