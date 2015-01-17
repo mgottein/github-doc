@@ -92,7 +92,7 @@ class JavadocLink:
         clsName = context.getClsName()
         sourceLine = comment.getSourceLine()
         name = sourceLine.getName()
-        if package and cls:
+        if package and clsName:
             link.cls = "{}.{}".format(package, clsName)
         elif package and isinstance(sourceLine, ClassLine):
             link.cls = "{}.{}".format(package, name)
