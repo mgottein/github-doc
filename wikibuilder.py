@@ -48,7 +48,10 @@ class Wiki:
             elif isinstance(javadoc.sourceLine, MethodLine):
                 text += ('{}\n'.format(hx(3, javadoc.sourceLine.name)))
                 text += ('**MODIFIER** {}\n\n'.format(', '.join(javadoc.sourceLine.modifiers)))
-                text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
+                try:
+                    text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
+                except AttributeError:
+                    pass
                 text += ('{}\n\n'.format(self.formatTag(javadoc.blockTags, True)))
                 text += ('{}\n\n'.format(code('java', javadoc.sourceLine.sourceLine)))
                 self.appendPage(currentClass, text)
