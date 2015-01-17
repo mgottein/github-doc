@@ -11,6 +11,14 @@ def buildWiki():
     wiki.create()
     wiki.setTag('title', 'TEST TITLE')
     wiki.setTag('subtitle', 'test subtitle')
+    contribs = ['me', 'you', 'bob']
+    wiki.setTag('contribs', contribs)
+    wiki.setTag('readme', getReadme())
+
+def getReadme():
+    readmeFile = open(path.join(REPODIR, 'README.md'))
+    readme = readmeFile.read()
+    return readme
 
 def collateData(repodir):
     javadocs = getJavadocText(open(path.join(repodir, 'Test.java'), 'r'))
