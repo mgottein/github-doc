@@ -7,4 +7,28 @@ def getJavadocs(f):
     javadocs = javadocRegexp.findall(java)
     return javadocs
 
-print getJavadocs(open('Test.java', 'r'))
+def extractTags(javadocs):
+    extractedTags = []
+    extractedText = []
+    tagRegexp = re.compile(r'\s*\**\s*@.*')
+    for javadoc in javadocs:
+        tags = []
+        text = []
+        for line in javadoc.split('\n'):
+            if tagRegexp.match(line):
+                tags.append(line)
+            else:
+                text.append(line)
+        extractedTags.append(tags)
+        extractedText.append(text)
+    return (extractedTags, extractedText)
+
+
+
+javadocs = getJavadocs(open('Test.java', 'r'))
+
+extracted = extractTags(javadocs)
+print "Tags"
+print extracted[0]
+print "Text"
+print extracted[1]
