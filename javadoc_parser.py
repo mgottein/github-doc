@@ -1,47 +1,60 @@
 import re
+import os
 
-tagRegexp = re.compile(r'\s*\**\s*@.*')
+class BlockTag:
+        def __init__(self, text):
+            self.name = text[1:text.index(' ')]
+            self.text = text[text.index(' '):].strip()
 
-def isLineTag(line):
-    return tagRegexp.match(line)
+        def getName(self):
+            return self.name
 
-class Tag:
-    def __init__(self, lineNum, text):
-        self.components = text.split(r'\s*')
-        self.lineNum = lineNum
+        def getText(self):
+            return self.text
 
-    def __str__(self):
-        return str(self.components)
+        def __repr__(self):
+            return "BlockTag: Name {} Text {}".format(self.name, self.text)
 
-    def getComponents(self):
-        return self.components
+class JavadocComment:
+    commentStripRe = re.compile(r'^[\s\*]*')
+    def __init__(self, text):
+        lines = text.splitlines()[1:-1]
+        strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
+        i = 0
+        self.hasMainDesc = False
+        self.tagSectionStart = None
+        self.blockTags = []
+        if strippedLines[0][0] != '@':
+            self.hasMainDesc = True
+        curBlockTagText = None
+        while i < len(strippedLines):
+            if len(strippedLines[i]) > 0:
+                if strippedLines[i][0] == '@':
+                    if not self.tagSectionStart:
+                        self.tagSectionStart = i
+                    if curBlockTagText:
+                        self.blockTags.append(BlockTag(curBlockTagText))
+                    curBlockTagText = strippedLines[i]
+                else:
+                    if curBlockTagText:
+                        curBlockTagText = os.linesep.join([curBlockTagText, strippedLines[i]])
+            i = i + 1
+        if curBlockTagText:
+            self.blockTags.append(BlockTag(curBlockTagText))
 
-    def getLineNum(self):
-        return self.lineNum
+    def hasMainDesc(self):
+        return self.hasMainDesc
 
-javadocRegexp = re.compile(r'/\*\*.*?\*/', re.DOTALL)
+    def getTagSectionStart(self):
+        return self.tagSectionStart
+
+    def __repr__(self):
+        return "JavaDocComment: MainDesc? {} TagSectionStart? {} BlockTags? {}".format(self.hasMainDesc, self.tagSectionStart, self.blockTags)
+
+
+javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 
 def getJavadocText(f):
     java = f.read();
-    javadocs = javadocRegexp.findall(java)
+    javadocs = javadocRe.findall(java)
     return javadocs
-
-
-def extractTags(javadocs):
-    extractedTags = []
-    extractedText = []
-    for javadoc in javadocs:
-        tags = []
-        text = []
-        lines = javadoc.split('\n')
-        i = 1
-        while i < len(lines):
-            line = lines[i]
-            if isLineTag(line):
-                tags.append(Tag(i, line))
-            else:
-                text.append((i, line))
-            i = i + 1
-        extractedTags.append(tags)
-        extractedText.append(text)
-    return (extractedTags, extractedText)
