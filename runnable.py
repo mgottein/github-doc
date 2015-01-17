@@ -8,10 +8,10 @@ from os import path
 from javadoc_parser import *
 
 def collateData(repodir):
-    javadocs = getJavadocs(open('Test.java', 'r'))
+    javadocs = getJavadocText(open(path.join(repodir, 'Test.java'), 'r'))
     tags, text = extractTags(javadocs)
-    print tags, text
+    print tags
 
 if __name__ == '__main__':
-    repodir = path.dirname(path.realpath(__file__)) + '\\testapp'
+    repodir = path.join(path.dirname(path.realpath(__file__)), 'testapp')
     collateData(repodir)
