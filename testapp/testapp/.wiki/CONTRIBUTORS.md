@@ -1,5 +1,0 @@
-## Contributors
-
-me
-you
-bob
