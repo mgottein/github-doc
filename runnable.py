@@ -11,9 +11,12 @@ def buildWiki():
     wiki.create()
     wiki.setTag('title', 'TEST TITLE')
     wiki.setTag('subtitle', 'test subtitle')
+    wiki.setTag('readme', getReadme(REPODIR))
     contribs = ['me', 'you', 'bob']
     wiki.setTag('contribs', contribs)
-    wiki.setTag('readme', getReadme())
+    text = 'This is one line.\n\nThis is another. And another (jk {{ test }}).\nAnd another!'
+    wiki.createPage("TEST_PAGE", text)
+    wiki.setTag('test', 'UH')
 
 def getReadme():
     readmeFile = open(path.join(REPODIR, 'README.md'))

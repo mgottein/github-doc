@@ -1,4 +1,4 @@
-from os import path, listdir
+import os
 import fileinput
 import distutils.core
 
@@ -7,15 +7,21 @@ class Wiki:
         self.WIKIDIR = wikidir
     
     def create(self):
-        src = path.join(path.dirname(path.realpath(__file__)), 'wiki-template\\')
+        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template\\')
         dest = self.WIKIDIR
         distutils.dir_util.copy_tree(src, dest)
+    
+    def createPage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'w')
+        file.write(text)
+        file.close()
     
     def setTag(self, tag, text):
         if isinstance(text, list):
             text = '\n'.join(text)
-        for title in listdir(self.WIKIDIR):
-            file = path.join(self.WIKIDIR, title)
+        for title in os.listdir(self.WIKIDIR):
+            file = os.path.join(self.WIKIDIR, title)
             strbuild = '{{ %s }}' % tag
             for line in fileinput.FileInput(file, inplace=1):
                 line = line.replace(strbuild, text)
