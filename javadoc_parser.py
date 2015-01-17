@@ -63,6 +63,55 @@ class InlineTag(Tag):
         self.name = text[2:m.start()]
         self.text = text[m.end():-1].strip()
 
+class SourceLineFactory:
+    def __init__(self):
+        self.classRe = re.compile(r'class\s*[^\{]+\{')
+        self.interfaceRe = re.compile(r'interface\s*[^\{]+\{')
+        self.methodRe = re.compile(r'\([^\)]*\)\s*\{')
+        self.fieldRe = re.compile(r';')
+
+    def parse(self, sourceLine):
+        if self.classRe.search(sourceLine):
+            return ClassLine(sourceLine)
+        elif self.interfaceRe.search(sourceLine):
+            return InterfaceLine(sourceLine)
+        elif self.methodRe.search(sourceLine):
+            return MethodLine(sourceLine)
+        elif self.fieldRe.search(sourceLine):
+            return FieldLine(sourceLine)
+
+class SourceLine:
+    def __init__(self, sourceLine):
+       self.sourceLine = sourceLine
+
+class ClassLine(SourceLine):
+    def __init__(self, sourceLine):
+        SourceLine.__init__(self, sourceLine)
+
+    def __repr__(self):
+        return "Class"
+
+class InterfaceLine(SourceLine):
+    def __init__(self, sourceLine):
+        SourceLine.__init__(self, sourceLine)
+
+    def __repr__(self):
+        return "Interface"
+
+class MethodLine(SourceLine):
+    def __init__(self, sourceLine):
+        SourceLine.__init__(self, sourceLine)
+
+    def __repr__(self):
+        return "Method"
+
+class FieldLine(SourceLine):
+    def __init__(self, sourceLine):
+        SourceLine.__init__(self, sourceLine)
+
+    def __repr__(self):
+        return "Field"
+
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
 
@@ -70,9 +119,13 @@ Line bounds are 0-index based
 '''
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
+    sourceLineFactory = SourceLineFactory()
     def __init__(self, text, lineBounds, nextSourceLine):
         self.lineBounds = lineBounds
-        self.nextSourceLine = nextSourceLine
+        if nextSourceLine:
+            self.nextSourceLine = JavadocComment.sourceLineFactory.parse(nextSourceLine)
+        else:
+            self.nextSourceLine = None
         lines = text.splitlines()[1:-1]
         strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
         self.mainDesc = None
