@@ -15,4 +15,3 @@ def collateData(repodir):
 if __name__ == '__main__':
     repodir = path.dirname(path.realpath(__file__)) + '\\testapp'
     collateData(repodir)
-    print repodir
