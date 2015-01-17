@@ -9,6 +9,7 @@ class Tag:
     def __init__(self, text):
         atIndex = text.index('@')
 
+
 class Comment:
 
 javadocRegexp = re.compile(r'/\*\*.*?\*/', re.DOTALL)
