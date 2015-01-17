@@ -17,10 +17,22 @@ def italic(text):
     return '*{}*'.format(text)
 
 '''
+Image link (inline)
+'''
+def image(link, alt_text=None):
+    return '![alt text]({} "{}")'.format(link, alt_text)
+    
+'''
 Quote text
 '''
 def quote(text):
     return '>{}'.format(text)
+
+'''
+Syntax highlighting
+'''
+def code(lang, text):
+    return '```{}\n{}\n```'.format(lang, text)
 
 '''
 Web link
