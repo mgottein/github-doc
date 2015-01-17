@@ -3,23 +3,21 @@ from javadoc_parser import *
 from wikibuilder import *
 
 APPNAME = 'testapp'
-REPODIR = ''
+REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
 
 '''
 Instantiate and build the custom wiki
 '''
-def buildWiki():
+def buildWiki(javadocs=None):
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
     wiki.setTag('title', 'TEST TITLE')
     wiki.setTag('subtitle', 'test subtitle')
     wiki.setTag('readme', getReadme())
-    contribs = ['me', 'you', 'bob']
-    wiki.setTag('contribs', contribs)
-    text = 'This is one line.\n\nThis is another. And another (jk {{ test }}).\nAnd another!'
-    wiki.createPage("TEST_PAGE", text)
-    wiki.setTag('test', 'UH')
-    wiki.appendPage('CONTRIBUTORS', '\nted')
+    
+    if javadocs:
+        wiki.buildGraph(javadocs)
+        wiki.buildDocs(javadocs)
 
 '''
 Return project readme file
@@ -34,10 +32,12 @@ def getReadme():
 Parse project javadocs and read data
 '''
 def collateData(repodir):
+    javadocs = []
     for javadoc in getJavadocs(open(path.join(repodir, 'Test.java'), 'r')):
+        javadocs.append(javadoc)
         print javadoc
+    return javadocs
 
 if __name__ == '__main__':
-    REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
-    collateData(REPODIR)
-    buildWiki()
+    javadocs = collateData(REPODIR)
+    buildWiki(javadocs)
