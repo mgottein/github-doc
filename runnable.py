@@ -4,11 +4,14 @@ Created on Jan 16, 2015
 @author: Dan Green
 '''
 
-import os
+from os import path
+from javadoc_parser import *
 
 def collateData(repodir):
-    print repodir
+    javadocs = getJavadocs(open('Test.java', 'r'))
+    tags, text = extractTags(javadocs)
+    print tags, text
 
 if __name__ == '__main__':
-    repodir = 'C:\Users\Dan\Documents\GitHub\github-doc\testapp'
+    repodir = path.dirname(path.realpath(__file__)) + '\\testapp'
     collateData(repodir)
