@@ -167,28 +167,32 @@ class InlineTag(Tag):
 class SourceLineFactory:
     def __init__(self):
         self.classRe = re.compile(r'(class|interface)\s*[^\{]+\{')
-        self.methodRe = re.compile(r'\([^\)]*\)\s*\{')
+        self.methodRe = re.compile(r'\([^\)]*\)\s*[\{;]')
         self.fieldRe = re.compile(r';')
 
-    def parse(self, sourceLine):
+    def parse(self, sourceLine, sourceBounds):
         if sourceLine:
             if self.classRe.search(sourceLine):
-                return ClassLine(sourceLine)
+                return ClassLine(sourceLine, sourceBounds)
             elif self.methodRe.search(sourceLine):
-                return MethodLine(sourceLine)
+                return MethodLine(sourceLine, sourceBounds)
             elif self.fieldRe.search(sourceLine):
-                return FieldLine(sourceLine)
+                return FieldLine(sourceLine, sourceBounds)
         else:
             return None
 
 class SourceLine:
     modifiersRe = re.compile(r'(abstract|final|native|protected|public|private|static|strict|synchronized|transient|volatile)')
-    def __init__(self, sourceLine):
+    def __init__(self, sourceLine, sourceBounds):
        self.sourceLine = sourceLine
+       self.sourceBounds = sourceBounds
        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
 
     def getText(self):
         return self.sourceLine
+
+    def getBounds(self):
+        return self.sourceBounds
 
     def getName(self):
         return self.name
@@ -197,11 +201,14 @@ class SourceLine:
         return self.modifiers
 
 class ClassLine(SourceLine):
-    def __init__(self, sourceLine):
-        SourceLine.__init__(self, sourceLine)
+    def __init__(self, sourceLine, sourceBounds):
+        SourceLine.__init__(self, sourceLine, sourceBounds)
         components = sourceLine.split()
         self.isInterface = "interface" in sourceLine
         self.name = components[len(self.modifiers) + 1]
+
+    def getName(self):
+        return self.name
 
     def __repr__(self):
         return "{} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name)
@@ -212,8 +219,8 @@ class MethodLine(SourceLine):
     argsRe = re.compile(r'\(.*\)')
     nameRe = re.compile(r'\s+.+(?=\()')
     retTypeRe = re.compile(r'[^\s]+\s')
-    def __init__(self, sourceLine):
-        SourceLine.__init__(self, sourceLine)
+    def __init__(self, sourceLine, sourceBounds):
+        SourceLine.__init__(self, sourceLine, sourceBounds)
         self.typeParams = []
         self.name = None
         self.args = []
@@ -238,8 +245,8 @@ class MethodLine(SourceLine):
         return "Method: {} <{}> {} {}({})".format(' '.join(self.modifiers), ', '.join(self.typeParams), self.retType, self.name, ', '.join(self.args))
 
 class FieldLine(SourceLine):
-    def __init__(self, sourceLine):
-        SourceLine.__init__(self, sourceLine)
+    def __init__(self, sourceLine, sourceBounds):
+        SourceLine.__init__(self, sourceLine, sourceBounds)
         components = sourceLine.split()
         self.name = components[len(self.modifiers) + 1]
         self.type = components[len(self.modifiers)]
@@ -264,7 +271,7 @@ class Context:
         return self.cls
 
     def __repr__(self):
-        return "{}.{}".format(self.package, self.cls)
+        return "{}.{}".format(self.package, self.cls.getName() if self.cls else None)
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
@@ -273,12 +280,10 @@ Line bounds are 0-index based
 '''
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
-    sourceLineFactory = SourceLineFactory()
-    def __init__(self, context, text, lineBounds, sourceLineInfo):
+    def __init__(self, context, text, lineBounds, sourceLine):
         self.context = context
         self.lineBounds = lineBounds
-        self.sourceLine, self.sourceBoundsStart, self.sourceBoundsEnd = sourceLineInfo
-        self.sourceLine = JavadocComment.sourceLineFactory.parse(self.sourceLine)
+        self.sourceLine = sourceLine
         lines = text.splitlines()[1:-1]
         strippedLines = [JavadocComment.commentStripRe.sub('', line) for line in lines]
         self.mainDesc = None
@@ -313,9 +318,6 @@ class JavadocComment:
     def getLineBounds(self):
         return self.lineBounds
 
-    def getSourceBounds(self):
-        return (self.sourceBoundsStart, self.sourceBoundsEnd)
-
     def getSourceLine(self):
         return self.sourceLine
 
@@ -334,7 +336,7 @@ class JavadocComment:
 
     def __repr__(self):
         #return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
-        return "JavaDocComment: SourceLine? {} SourceBounds? {} Edges? {}".format(self.sourceLine, self.getSourceBounds(), list(self.getEdges()))
+        return "JavaDocComment: Context? {} SourceLine? {} Edges? {}".format(self.context, self.sourceLine, list(self.getEdges()))
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
@@ -347,6 +349,7 @@ def getJavadocs(f):
     packageM = packageRe.search(java)
     package = None
     classStack = [None]
+    sourceLineFactory = SourceLineFactory()
     if packageM:
         package = packageM.group(0).split()[-1][:-1]
     for javadocTextM in javadocRe.finditer(java):
@@ -370,9 +373,9 @@ def getJavadocs(f):
                     if depth == 0:
                         sourceBoundsEnd = java.count(os.linesep, 0, bracketM.end())
                         break
-        else:
-            sourceLine = None
-            sourceBoundsStart = -1
-            sourceBoundsEnd = -1
-        javadocComment = JavadocComment(Context(package, classStack[-1]), javadocText, (startLine, endLine), (sourceLine, sourceBoundsStart, sourceBoundsEnd))
-        yield javadocComment
+            while len(classStack) > 1 and sourceBoundsStart > classStack[-1].getBounds()[1]:
+                classStack.pop()
+            javadocComment = JavadocComment(Context(package, classStack[-1]), javadocText, (startLine, endLine), sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd)))
+            if isinstance(javadocComment.getSourceLine(), ClassLine):
+                classStack.append(javadocComment.getSourceLine())
+            yield javadocComment

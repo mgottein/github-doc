@@ -5,6 +5,18 @@
  */
 public class Test {
 
+
+  /**
+   * interface
+   */
+  public interface Test1 {
+    /**
+     * @param str a string
+     * @return another string
+     */
+    public String run(String str);
+  }
+
   /**
    * Test description of variable
    * {@link "string"}
@@ -24,6 +36,29 @@ public class Test {
    */
   public static void main(String[] args) {
     System.out.println("Hello World~");
+  }
+
+  /**
+   * static class
+   */
+  public static class Test2 {
+    /**
+     * some field
+     */
+    private int field;
+  }
+
+  /**
+   * inner class
+   */
+  public class Test3 {
+    /**
+     * some method
+     * @param i an integer
+     */
+    public void test(int i) {
+
+    }
   }
 
   /**
