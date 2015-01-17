@@ -32,7 +32,17 @@ public class Test {
    * @param otherParam another parameter
    * @return an integer
    */
-  public static <T extends Runnable> int test(String[] something, T otherParam) {
+  public static <T extends Runnable, V super BufferedInputStream> int test(String[] something, T otherParam) {
+
+  }
+
+  /**
+   * A second test method
+   *
+   * @param nothing nothing in particular
+   * @return TEST
+   */
+  int test2(String nothing) {
 
   }
 

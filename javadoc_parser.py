@@ -121,13 +121,13 @@ class MethodLine(SourceLine):
     retTypeRe = re.compile(r'[^\s]+\s')
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
-        self.typeParams = None
+        self.typeParams = []
         self.name = None
         self.args = []
         self.retType = None
         typeParamsM = MethodLine.typeParamsRe.search(sourceLine)
         if typeParamsM:
-            self.typeParams = typeParamsM.group(0)
+            self.typeParams = [typeParam.strip() for typeParam in typeParamsM.group(0).strip()[1:-1].split(',')]
         signatureM = MethodLine.signatureRe.search(sourceLine)
         if signatureM:
             signature = signatureM.group(0).strip()
@@ -142,7 +142,7 @@ class MethodLine(SourceLine):
                 self.retType = retTypeM.group(0).strip()
 
     def __repr__(self):
-        return "Method: {} {} {} {}({})".format(' '.join(self.modifiers), self.typeParams, self.retType, self.name, ', '.join(self.args))
+        return "Method: {} <{}> {} {}({})".format(' '.join(self.modifiers), ', '.join(self.typeParams), self.retType, self.name, ', '.join(self.args))
 
 class FieldLine(SourceLine):
     def __init__(self, sourceLine):
