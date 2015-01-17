@@ -81,36 +81,67 @@ class SourceLineFactory:
             return FieldLine(sourceLine)
 
 class SourceLine:
+    modifiersRe = re.compile(r'(abstract|final|native|protected|public|private|static|strict|synchronized|transient|volatile)')
+    typeParamsRe = re.compile(r'\<.+\>')
+    signatureRe = re.compile(r'\w+\s+\w+\(.*\)')
     def __init__(self, sourceLine):
        self.sourceLine = sourceLine
+
+    def getSourceLine(self):
+        return self.sourceLine
+
+    def getName(self):
+        return self.name
+
+    def getModifiers():
+        return self.modifiers
 
 class ClassLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
+        components = sourceLine.split()
+        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
+        self.name = components[len(self.modifiers) + 1]
 
     def __repr__(self):
-        return "Class"
+        return "{} class {}".format(' '.join(self.modifiers), self.name)
 
 class InterfaceLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
+        components = sourceLine.split()
+        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
+        self.name = components[len(self.modifiers) + 1]
 
     def __repr__(self):
-        return "Interface"
+        return "{} interface {}".format(' '.join(self.modifiers), self.name)
 
 class MethodLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
+        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
+        typeParamsM = SourceLine.typeParamsRe.search(sourceLine)
+        self.typeParams = None
+        self.signature = None
+        if typeParamsM:
+            self.typeParams = typeParamsM.group(0)
+        signatureM = SourceLine.signatureRe.search(sourceLine)
+        if signatureM:
+            self.signature = signatureM.group(0)
 
     def __repr__(self):
-        return "Method"
+        return "Method: {} {} {}".format(' '.join(self.modifiers), self.typeParams, self.signature)
 
 class FieldLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
+        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
+        components = sourceLine.split()
+        self.name = components[len(self.modifiers) + 1]
+        self.type = components[len(self.modifiers)]
 
     def __repr__(self):
-        return "Field"
+        return "Field: {} {} {}".format(' '.join(self.modifiers), self.type, self.name)
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
