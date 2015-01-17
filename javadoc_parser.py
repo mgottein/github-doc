@@ -65,12 +65,14 @@ class InlineTag(Tag):
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
+
+Line bounds are 0-index based
 '''
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
-    def __init__(self, startLine, endLine, text):
-        self.startLine = startLine
-        self.endLine = endLine
+    def __init__(self, text, lineBounds, nextSourceLine):
+        self.lineBounds = lineBounds
+        self.nextSourceLine = nextSourceLine
         lines = text.splitlines()[1:-1]
         strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
         self.mainDesc = None
@@ -102,12 +104,26 @@ class JavadocComment:
     def getBlockTags(self):
         return self.blockTags
 
+    def getLineBounds(self):
+        return self.lineBounds
+
+    def getNextSourceLine(self):
+        return self.nextSourceLine
+
     def __repr__(self):
-        return "JavaDocComment: StartLine {} EndLine {} MainDesc? {} BlockTags? {}".format(self.startLine, self.endLine, self.mainDesc, self.blockTags)
+        return "JavaDocComment: LineBounds? {} NextSourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.nextSourceLine, self.mainDesc, self.blockTags)
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
+nextSourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
 
 def getJavadocs(f):
     java = f.read();
     for m in javadocRe.finditer(java):
-        yield JavadocComment(java.count(os.linesep, 0, m.start()), java.count(os.linesep, 0, m.end()), m.group(0))
+        startLine = java.count(os.linesep, 0, m.start())
+        endLine = java.count(os.linesep, 0, m.end())
+        nextSourceLineM = nextSourceLineRe.search(java, m.end() + 1)
+        if nextSourceLineM:
+            nextSourceLine = nextSourceLineM.group(0).strip()
+        else:
+            nextSourceLine = None
+        yield JavadocComment(m.group(0), (startLine, endLine), nextSourceLine)
