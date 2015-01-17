@@ -26,6 +26,17 @@ public class Test {
   }
 
   /**
+   * A test method
+   *
+   * @param something some arg
+   * @param otherParam another parameter
+   * @return an integer
+   */
+  public static <T extends Runnable> int test(String[] something, T otherParam) {
+
+  }
+
+  /**
    * NOTHING
    */
 }

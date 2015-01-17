@@ -116,19 +116,33 @@ class InterfaceLine(SourceLine):
 class MethodLine(SourceLine):
     typeParamsRe = re.compile(r'\<.+\>')
     signatureRe = re.compile(r'\w+\s+\w+\(.*\)')
+    argsRe = re.compile(r'\(.*\)')
+    nameRe = re.compile(r'\s+.+(?=\()')
+    retTypeRe = re.compile(r'[^\s]+\s')
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
         self.typeParams = None
-        self.signature = None
+        self.name = None
+        self.args = []
+        self.retType = None
         typeParamsM = MethodLine.typeParamsRe.search(sourceLine)
         if typeParamsM:
             self.typeParams = typeParamsM.group(0)
         signatureM = MethodLine.signatureRe.search(sourceLine)
         if signatureM:
-            self.signature = signatureM.group(0)
+            signature = signatureM.group(0).strip()
+            argsM = MethodLine.argsRe.search(signature)
+            nameM = MethodLine.nameRe.search(signature)
+            retTypeM = MethodLine.retTypeRe.search(signature)
+            if argsM:
+                self.args = [arg.strip() for arg in argsM.group(0).strip()[1:-1].split(',')]
+            if nameM:
+                self.name = nameM.group(0).strip()
+            if retTypeM:
+                self.retType = retTypeM.group(0).strip()
 
     def __repr__(self):
-        return "Method: {} {} {}".format(' '.join(self.modifiers), self.typeParams, self.signature)
+        return "Method: {} {} {} {}({})".format(' '.join(self.modifiers), self.typeParams, self.retType, self.name, ', '.join(self.args))
 
 class FieldLine(SourceLine):
     def __init__(self, sourceLine):
