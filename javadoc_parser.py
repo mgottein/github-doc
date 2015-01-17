@@ -9,7 +9,7 @@ class LinkParser:
         elif LinkParser.aRe.search(text):
             return HtmlLink(text)
         else:
-            return JavadocLink(text)
+            return JavadocLink.parse(text)
 '''
 String link to nowhere
 '''
@@ -63,20 +63,51 @@ class JavadocLink:
     fieldRe = re.compile(r'#[^\s\(]+')
     methodRe = re.compile(r'#[^\s^\(]*\(.*\)')
 
-    def __init__(self, text):
-        self.cls = None
-        self.method = None
-        self.field = None
+    @staticmethod
+    def parse(text):
+        link = JavadocLink()
+        link.cls = None
+        link.method = None
+        link.field = None
         classM = JavadocLink.classRe.search(text)
         if classM:
-            self.cls = classM.group(0)
+            link.cls = classM.group(0)
         methodM = JavadocLink.methodRe.search(text)
         if methodM:
-            self.method = methodM.group(0)[1:]
+            link.method = methodM.group(0)[1:]
         else:
             fieldM = JavadocLink.fieldRe.search(text)
             if fieldM:
-                self.field = fieldM.group(0)[1:]
+                link.field = fieldM.group(0)[1:]
+        return link
+
+    @staticmethod
+    def fromComment(comment):
+        link = JavadocLink()
+        link.cls = None
+        link.method = None
+        link.field = None
+        context = comment.getContext()
+        package = context.getPackage()
+        clsName = context.getClsName()
+        sourceLine = comment.getSourceLine()
+        name = sourceLine.getName()
+        if package and cls:
+            link.cls = "{}.{}".format(package, clsName)
+        elif package and isinstance(sourceLine, ClassLine):
+            link.cls = "{}.{}".format(package, name)
+        elif clsName:
+            link.cls = clsName
+        if isinstance(sourceLine, MethodLine):
+            link.method = name
+        elif isinstance(sourceLine, FieldLine):
+            link.field = name
+        elif isinstance(sourceLine, ClassLine):
+            if link.cls:
+                link.cls = "{}.{}".format(link.cls, name)
+            else:
+                link.cls = name
+        return link
 
     def getCls(self):
         return self.cls
@@ -260,18 +291,21 @@ Package can be none (default package)
 Class can be none (top level class javadoc)
 '''
 class Context:
-    def __init__(self, package, cls):
+    def __init__(self, package, clsStack):
         self.package = package
-        self.cls = cls
+        self.clsStack = clsStack
 
     def getPackage(self):
         return self.package
 
-    def getCls(self):
-        return self.cls
+    def getClsStack(self):
+        return self.clsStack
+
+    def getClsName(self):
+        return '.'.join([cls.getName() for cls in self.clsStack])
 
     def __repr__(self):
-        return "{}.{}".format(self.package, self.cls.getName() if self.cls else None)
+        return "{}.{}".format(self.package, self.getClsName())
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
@@ -308,6 +342,8 @@ class JavadocComment:
         if self.mainDesc:
             self.mainDesc = Text(self.mainDesc)
 
+    def getContext(self):
+        return self.context
 
     def getMainDesc(self):
         return self.mainDesc
@@ -336,7 +372,7 @@ class JavadocComment:
 
     def __repr__(self):
         #return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
-        return "JavaDocComment: Context? {} SourceLine? {} Edges? {}".format(self.context, self.sourceLine, list(self.getEdges()))
+        return "JavaDocComment: Context? {} SourceLine? {} Edges? {} Javadoc Link? {}".format(self.context, self.sourceLine, list(self.getEdges()), JavadocLink.fromComment(self))
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
@@ -348,7 +384,7 @@ def getJavadocs(f):
     java = f.read();
     packageM = packageRe.search(java)
     package = None
-    classStack = [None]
+    classStack = []
     sourceLineFactory = SourceLineFactory()
     if packageM:
         package = packageM.group(0).split()[-1][:-1]
@@ -373,9 +409,9 @@ def getJavadocs(f):
                     if depth == 0:
                         sourceBoundsEnd = java.count(os.linesep, 0, bracketM.end())
                         break
-            while len(classStack) > 1 and sourceBoundsStart > classStack[-1].getBounds()[1]:
+            while len(classStack) > 0 and sourceBoundsStart > classStack[-1].getBounds()[1]:
                 classStack.pop()
-            javadocComment = JavadocComment(Context(package, classStack[-1]), javadocText, (startLine, endLine), sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd)))
+            javadocComment = JavadocComment(Context(package, list(classStack)), javadocText, (startLine, endLine), sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd)))
             if isinstance(javadocComment.getSourceLine(), ClassLine):
                 classStack.append(javadocComment.getSourceLine())
             yield javadocComment
