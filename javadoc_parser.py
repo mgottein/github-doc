@@ -1,7 +1,6 @@
 import re
 import os
 
-
 class LinkParser:
     aRe = re.compile(r'\<a\s+href\=\".*\"\>.*\</a\>')
     def parse(self, text):
@@ -172,12 +171,15 @@ class SourceLineFactory:
         self.fieldRe = re.compile(r';')
 
     def parse(self, sourceLine):
-        if self.classRe.search(sourceLine):
-            return ClassLine(sourceLine)
-        elif self.methodRe.search(sourceLine):
-            return MethodLine(sourceLine)
-        elif self.fieldRe.search(sourceLine):
-            return FieldLine(sourceLine)
+        if sourceLine:
+            if self.classRe.search(sourceLine):
+                return ClassLine(sourceLine)
+            elif self.methodRe.search(sourceLine):
+                return MethodLine(sourceLine)
+            elif self.fieldRe.search(sourceLine):
+                return FieldLine(sourceLine)
+        else:
+            return None
 
 class SourceLine:
     modifiersRe = re.compile(r'(abstract|final|native|protected|public|private|static|strict|synchronized|transient|volatile)')
@@ -246,6 +248,25 @@ class FieldLine(SourceLine):
         return "Field: {} {} {}".format(' '.join(self.modifiers), self.type, self.name)
 
 '''
+Context of where a javadoc is (package / class)
+Package can be none (default package)
+Class can be none (top level class javadoc)
+'''
+class Context:
+    def __init__(self, package, cls):
+        self.package = package
+        self.cls = cls
+
+    def getPackage(self):
+        return self.package
+
+    def getCls(self):
+        return self.cls
+
+    def __repr__(self):
+        return "{}.{}".format(self.package, self.cls)
+
+'''
 A single javadoc comment. Can have a main description and tag section, or only one of them
 
 Line bounds are 0-index based
@@ -253,12 +274,11 @@ Line bounds are 0-index based
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
     sourceLineFactory = SourceLineFactory()
-    def __init__(self, text, lineBounds, sourceLine):
+    def __init__(self, context, text, lineBounds, sourceLineInfo):
+        self.context = context
         self.lineBounds = lineBounds
-        if sourceLine:
-            self.sourceLine = JavadocComment.sourceLineFactory.parse(sourceLine)
-        else:
-            self.sourceLine = None
+        self.sourceLine, self.sourceBoundsStart, self.sourceBoundsEnd = sourceLineInfo
+        self.sourceLine = JavadocComment.sourceLineFactory.parse(self.sourceLine)
         lines = text.splitlines()[1:-1]
         strippedLines = [JavadocComment.commentStripRe.sub('', line) for line in lines]
         self.mainDesc = None
@@ -293,23 +313,66 @@ class JavadocComment:
     def getLineBounds(self):
         return self.lineBounds
 
-    def getNextSourceLine(self):
-        return self.nextSourceLine
+    def getSourceBounds(self):
+        return (self.sourceBoundsStart, self.sourceBoundsEnd)
+
+    def getSourceLine(self):
+        return self.sourceLine
+
+    def getEdges(self):
+        if self.mainDesc:
+            for content in self.mainDesc.getContent():
+                if isinstance(content, InlineTag) and content.getLink():
+                    yield content.getLink()
+        if self.blockTags:
+            for blockTag in self.blockTags:
+                if blockTag.getLink():
+                    yield blockTag.getLink()
+                for content in blockTag.getText().getContent():
+                    if isinstance(content, InlineTag) and content.getLink():
+                        yield content.getLink()
 
     def __repr__(self):
-        return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
+        #return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
+        return "JavaDocComment: SourceLine? {} SourceBounds? {} Edges? {}".format(self.sourceLine, self.getSourceBounds(), list(self.getEdges()))
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
+packageRe = re.compile(r'package\s+.*;')
 sourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
+bracketRe = re.compile(r'[\{\}]')
+
 
 def getJavadocs(f):
     java = f.read();
-    for m in javadocRe.finditer(java):
-        startLine = java.count(os.linesep, 0, m.start())
-        endLine = java.count(os.linesep, 0, m.end())
-        sourceLineM = sourceLineRe.search(java, m.end() + 1)
+    packageM = packageRe.search(java)
+    package = None
+    classStack = [None]
+    if packageM:
+        package = packageM.group(0).split()[-1][:-1]
+    for javadocTextM in javadocRe.finditer(java):
+        javadocText = javadocTextM.group(0)
+        startLine = java.count(os.linesep, 0, javadocTextM.start())
+        endLine = java.count(os.linesep, 0, javadocTextM.end())
+        sourceLineM = sourceLineRe.search(java, javadocTextM.end() + 1)
         if sourceLineM:
             sourceLine = sourceLineM.group(0).strip()
+            sourceBoundsStart = java.count(os.linesep, 0, sourceLineM.end())
+            sourceBoundsEnd = sourceBoundsStart
+            if sourceLine[-1] == '{':
+                depth = 1
+                for bracketM in bracketRe.finditer(java, sourceLineM.end() + 1):
+                    if java[bracketM.start() - 1] == '\\':
+                        continue
+                    if java[bracketM.start()] == '{':
+                        depth = depth + 1
+                    else:
+                        depth = depth - 1
+                    if depth == 0:
+                        sourceBoundsEnd = java.count(os.linesep, 0, bracketM.end())
+                        break
         else:
             sourceLine = None
-        yield JavadocComment(m.group(0), (startLine, endLine), sourceLine)
+            sourceBoundsStart = -1
+            sourceBoundsEnd = -1
+        javadocComment = JavadocComment(Context(package, classStack[-1]), javadocText, (startLine, endLine), (sourceLine, sourceBoundsStart, sourceBoundsEnd))
+        yield javadocComment
