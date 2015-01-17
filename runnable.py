@@ -37,5 +37,10 @@ def collateData(files):
     return javadocs
 
 if __name__ == '__main__':
+    #print getClasses(open(path.join(REPODIR, 'Test.java'), 'r'))
     for javadoc in getJavadocs(open(path.join(REPODIR, 'Test.java'), 'r')):
         print javadoc
+    '''
+    for javadoc in genJavadocGraph(REPODIR):
+        print javadoc
+    '''

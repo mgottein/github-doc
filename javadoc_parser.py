@@ -211,9 +211,27 @@ class InlineTag(Tag):
 
 class SourceLineFactory:
     def __init__(self):
-        self.classRe = re.compile(r'.*(class|interface).*')
+        self.classRe = re.compile(r'(class|interface)\s+[^\s]+\s+{')
         self.methodRe = re.compile(r'\([^\)]*\)\s*[\{;]')
         self.fieldRe = re.compile(r';')
+
+    def create(self, java, match):
+        sourceLine = match.group(0).strip()
+        sourceBoundsStart = java.count('\n', 0, match.end())
+        sourceBoundsEnd = sourceBoundsStart
+        if bracketRe.search(sourceLine):
+            depth = 1
+            for bracketM in bracketRe.finditer(java, match.end() + 1):
+                if java[bracketM.start() - 1] == '\\':
+                    continue
+                if java[bracketM.start()] == '{':
+                    depth = depth + 1
+                else:
+                    depth = depth - 1
+                if depth == 0:
+                    sourceBoundsEnd = java.count('\n', 0, bracketM.end())
+                    break
+        return self.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd))
 
     def parse(self, sourceLine, sourceBounds):
         if sourceLine:
@@ -256,7 +274,7 @@ class ClassLine(SourceLine):
         return self.name
 
     def __repr__(self):
-        return "{} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name)
+        return "{} {} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name, self.sourceBounds)
 
 class MethodLine(SourceLine):
     typeParamsRe = re.compile(r'\<.+\>')
@@ -395,18 +413,20 @@ javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
 sourceLineRe = re.compile(r'[^;\{]*[;\{]', re.DOTALL)
 bracketRe = re.compile(r'[\{\}]')
+sourceLineFactory = SourceLineFactory()
 
-def getSources(f):
-    java = f.read()
-    sourceFactory = SourceLineFactory()
-    print sourceFactory.classRe.findall(java)
+def getClasses(java):
+    classList = []
+    for sourceLineM in sourceLineFactory.classRe.finditer(java):
+        classList.append(sourceLineFactory.create(java, sourceLineM))
+    return classList
 
 def getJavadocs(f):
-    java = f.read();
+    java = f.read()
+    classList = getClasses(java)
     packageM = packageRe.search(java)
     package = None
-    classStack = []
-    sourceLineFactory = SourceLineFactory()
+
     if packageM:
         package = packageM.group(0).split()[-1][:-1]
     for javadocTextM in javadocRe.finditer(java):
@@ -415,28 +435,13 @@ def getJavadocs(f):
         endLine = java.count('\n', 0, javadocTextM.end())
         sourceLineM = sourceLineRe.search(java, javadocTextM.end() + 1)
         if sourceLineM:
-            sourceLine = sourceLineM.group(0).strip()
-            sourceBoundsStart = java.count('\n', 0, sourceLineM.end())
-            sourceBoundsEnd = sourceBoundsStart
-            if bracketRe.search(sourceLine):
-                depth = 1
-                for bracketM in bracketRe.finditer(java, sourceLineM.end() + 1):
-                    if java[bracketM.start() - 1] == '\\':
-                        continue
-                    if java[bracketM.start()] == '{':
-                        depth = depth + 1
-                    else:
-                        depth = depth - 1
-                    if depth == 0:
-                        sourceBoundsEnd = java.count('\n', 0, bracketM.end())
-                        break
-            sourceLine = sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd))
-            while len(classStack) > 0 and sourceBoundsStart > classStack[-1].getBounds()[1]:
-                classStack.pop()
-            if sourceLine:    
-                javadocComment = JavadocComment(Context(package, list(classStack)), javadocText, (startLine, endLine), sourceLine)
-                if isinstance(javadocComment.getSourceLine(), ClassLine):
-                    classStack.append(javadocComment.getSourceLine())
+            sourceLine = sourceLineFactory.create(java, sourceLineM)
+            if sourceLine:
+                classStack = []
+                for cls in classList:
+                    if cls.getBounds()[0] <= sourceLine.getBounds()[0] and cls.getBounds()[1] >= sourceLine.getBounds()[1]:
+                        classStack.append(cls)
+                javadocComment = JavadocComment(Context(package, classStack), javadocText, (startLine, endLine), sourceLine)
                 yield javadocComment
 
 '''
