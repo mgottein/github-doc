@@ -69,6 +69,7 @@ class JavadocLink:
         link.cls = None
         link.method = None
         link.field = None
+        link.javadoc = None
         classM = JavadocLink.classRe.search(text)
         if classM:
             link.cls = classM.group(0)
@@ -87,6 +88,7 @@ class JavadocLink:
         link.cls = None
         link.method = None
         link.field = None
+        link.javadoc = None
         context = comment.getContext()
         package = context.getPackage()
         clsName = context.getClsName()
@@ -118,8 +120,20 @@ class JavadocLink:
     def getField(self):
         return self.field
 
+    def setJavadoc(self, javadoc):
+        self.javadoc = javadoc
+
+    def getJavadoc(self):
+        return self.javadoc
+
     def __repr__(self):
-        return "JavadocLink: {}#{}/{}".format(self.cls, self.method, self.field)
+        return "JavadocLink: {}#{}/{} Filled in? {}".format(self.cls, self.method, self.field, self.javadoc is not None)
+
+    def __hash__(self):
+        return hash(self.cls) * 3 + hash(self.method) * 5 + hash(self.field) * 7
+
+    def __eq__(self, other):
+        return self.cls == other.cls and self.method == other.method and self.field == other.field
 
 '''
 Text in a javadoc that may have inline tags embedded in it
@@ -379,7 +393,6 @@ packageRe = re.compile(r'package\s+.*;')
 sourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
 bracketRe = re.compile(r'[\{\}]')
 
-
 def getJavadocs(f):
     java = f.read();
     packageM = packageRe.search(java)
@@ -417,3 +430,25 @@ def getJavadocs(f):
                 if isinstance(javadocComment.getSourceLine(), ClassLine):
                     classStack.append(javadocComment.getSourceLine())
                 yield javadocComment
+
+'''
+Return list of all .java paths
+'''
+def getFiles(root):
+    files = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        for filename in [f for f in filenames if f.endswith('.java')]:
+            files.append(os.path.join(dirpath, filename))
+    return files
+
+def genJavadocGraph(root):
+    javadocs = {}
+    for f in getFiles(root):
+        for javadoc in getJavadocs(open(f, 'r')):
+            javadocs[JavadocLink.fromComment(javadoc)] = javadoc
+    for _, javadoc in javadocs.iteritems():
+        for edge in javadoc.getEdges():
+            if edge in javadocs:
+                edge.setJavadoc(javadocs[edge])
+    return javadocs
+
