@@ -1,5 +1,3 @@
-# {{ title }}
-## {{ subtitle }}
+## Readme
 
-[Contributers]({% contributers %}) | [Tags]({% tags %}) | [Statistics]({% statistics %})
---- | --- | ---
+{{ readme }}
