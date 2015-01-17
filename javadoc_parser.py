@@ -348,10 +348,10 @@ class JavadocComment:
                     curBlockTagText = line
                 else:
                     if curBlockTagText:
-                        curBlockTagText = os.linesep.join([curBlockTagText, line])
+                        curBlockTagText = '\n'.join([curBlockTagText, line])
                     else:
                         if self.mainDesc:
-                            self.mainDesc = os.linesep.join([self.mainDesc, line])
+                            self.mainDesc = '\n'.join([self.mainDesc, line])
                         else:
                             self.mainDesc = line
         if curBlockTagText:
@@ -411,12 +411,12 @@ def getJavadocs(f):
         package = packageM.group(0).split()[-1][:-1]
     for javadocTextM in javadocRe.finditer(java):
         javadocText = javadocTextM.group(0)
-        startLine = java.count(os.linesep, 0, javadocTextM.start())
-        endLine = java.count(os.linesep, 0, javadocTextM.end())
+        startLine = java.count('\n', 0, javadocTextM.start())
+        endLine = java.count('\n', 0, javadocTextM.end())
         sourceLineM = sourceLineRe.search(java, javadocTextM.end() + 1)
         if sourceLineM:
             sourceLine = sourceLineM.group(0).strip()
-            sourceBoundsStart = java.count(os.linesep, 0, sourceLineM.end())
+            sourceBoundsStart = java.count('\n', 0, sourceLineM.end())
             sourceBoundsEnd = sourceBoundsStart
             if bracketRe.search(sourceLine):
                 depth = 1
@@ -428,7 +428,7 @@ def getJavadocs(f):
                     else:
                         depth = depth - 1
                     if depth == 0:
-                        sourceBoundsEnd = java.count(os.linesep, 0, bracketM.end())
+                        sourceBoundsEnd = java.count('\n', 0, bracketM.end())
                         break
             sourceLine = sourceLineFactory.parse(sourceLine, (sourceBoundsStart, sourceBoundsEnd))
             while len(classStack) > 0 and sourceBoundsStart > classStack[-1].getBounds()[1]:
