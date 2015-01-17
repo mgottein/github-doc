@@ -211,7 +211,7 @@ class InlineTag(Tag):
 
 class SourceLineFactory:
     def __init__(self):
-        self.classRe = re.compile(r'(class|interface)\s*[^\{]+\{')
+        self.classRe = re.compile(r'.*(class|interface).*')
         self.methodRe = re.compile(r'\([^\)]*\)\s*[\{;]')
         self.fieldRe = re.compile(r';')
 
@@ -399,7 +399,7 @@ bracketRe = re.compile(r'[\{\}]')
 def getSources(f):
     java = f.read()
     sourceFactory = SourceLineFactory()
-    print sourceFactory
+    print sourceFactory.classRe.findall(java)
 
 def getJavadocs(f):
     java = f.read();
@@ -458,5 +458,5 @@ def genJavadocGraph(root):
         for edge in javadoc.getEdges():
             if edge in javadocs:
                 edge.setJavadoc(javadocs[edge])
-    return javadocs
+    return javadocs.values()
 
