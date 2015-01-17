@@ -82,12 +82,11 @@ class SourceLineFactory:
 
 class SourceLine:
     modifiersRe = re.compile(r'(abstract|final|native|protected|public|private|static|strict|synchronized|transient|volatile)')
-    typeParamsRe = re.compile(r'\<.+\>')
-    signatureRe = re.compile(r'\w+\s+\w+\(.*\)')
     def __init__(self, sourceLine):
        self.sourceLine = sourceLine
+       self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
 
-    def getSourceLine(self):
+    def getText(self):
         return self.sourceLine
 
     def getName(self):
@@ -100,7 +99,6 @@ class ClassLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
         components = sourceLine.split()
-        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
         self.name = components[len(self.modifiers) + 1]
 
     def __repr__(self):
@@ -110,22 +108,22 @@ class InterfaceLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
         components = sourceLine.split()
-        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
         self.name = components[len(self.modifiers) + 1]
 
     def __repr__(self):
         return "{} interface {}".format(' '.join(self.modifiers), self.name)
 
 class MethodLine(SourceLine):
+    typeParamsRe = re.compile(r'\<.+\>')
+    signatureRe = re.compile(r'\w+\s+\w+\(.*\)')
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
-        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
-        typeParamsM = SourceLine.typeParamsRe.search(sourceLine)
         self.typeParams = None
         self.signature = None
+        typeParamsM = MethodLine.typeParamsRe.search(sourceLine)
         if typeParamsM:
             self.typeParams = typeParamsM.group(0)
-        signatureM = SourceLine.signatureRe.search(sourceLine)
+        signatureM = MethodLine.signatureRe.search(sourceLine)
         if signatureM:
             self.signature = signatureM.group(0)
 
@@ -135,7 +133,6 @@ class MethodLine(SourceLine):
 class FieldLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
-        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
         components = sourceLine.split()
         self.name = components[len(self.modifiers) + 1]
         self.type = components[len(self.modifiers)]
@@ -151,12 +148,12 @@ Line bounds are 0-index based
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
     sourceLineFactory = SourceLineFactory()
-    def __init__(self, text, lineBounds, nextSourceLine):
+    def __init__(self, text, lineBounds, sourceLine):
         self.lineBounds = lineBounds
-        if nextSourceLine:
-            self.nextSourceLine = JavadocComment.sourceLineFactory.parse(nextSourceLine)
+        if sourceLine:
+            self.sourceLine = JavadocComment.sourceLineFactory.parse(sourceLine)
         else:
-            self.nextSourceLine = None
+            self.sourceLine = None
         lines = text.splitlines()[1:-1]
         strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
         self.mainDesc = None
@@ -195,19 +192,19 @@ class JavadocComment:
         return self.nextSourceLine
 
     def __repr__(self):
-        return "JavaDocComment: LineBounds? {} NextSourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.nextSourceLine, self.mainDesc, self.blockTags)
+        return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
-nextSourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
+sourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
 
 def getJavadocs(f):
     java = f.read();
     for m in javadocRe.finditer(java):
         startLine = java.count(os.linesep, 0, m.start())
         endLine = java.count(os.linesep, 0, m.end())
-        nextSourceLineM = nextSourceLineRe.search(java, m.end() + 1)
-        if nextSourceLineM:
-            nextSourceLine = nextSourceLineM.group(0).strip()
+        sourceLineM = sourceLineRe.search(java, m.end() + 1)
+        if sourceLineM:
+            sourceLine = sourceLineM.group(0).strip()
         else:
-            nextSourceLine = None
-        yield JavadocComment(m.group(0), (startLine, endLine), nextSourceLine)
+            sourceLine = None
+        yield JavadocComment(m.group(0), (startLine, endLine), sourceLine)
