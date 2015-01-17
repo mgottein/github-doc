@@ -7,7 +7,7 @@ class Wiki:
         self.WIKIDIR = wikidir
     
     def create(self):
-        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template\\')
+        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
         dest = self.WIKIDIR
         distutils.dir_util.copy_tree(src, dest)
     

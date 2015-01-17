@@ -6,7 +6,7 @@ APPNAME = 'testapp'
 REPODIR = ''
 
 def buildWiki():
-    wikidir = REPODIR + '\\' + APPNAME + '.wiki\\'
+    wikidir = os.path.join(REPODIR,os.path.join(APPNAME,'.wiki'))
     wiki = Wiki(wikidir)
     wiki.create()
     wiki.setTag('title', 'TEST TITLE')
