@@ -37,5 +37,6 @@ def collateData(files):
     return javadocs
 
 if __name__ == '__main__':
-    for javadoc in getJavadocs(open(path.join(REPODIR, 'Test.java'), 'r')):
-        print javadoc
+    files = getFiles(REPODIR)
+    javadocs = collateData(files)
+    buildWiki(javadocs)

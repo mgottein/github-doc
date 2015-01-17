@@ -4,6 +4,7 @@ import distutils.core
 
 from markup_formatter import *
 from javadoc_parser import *
+import markup_formatter
 
 '''
 Class to create and customize the Wiki
@@ -21,8 +22,8 @@ class Wiki:
     Use the java docs to build the wiki graph network
     '''
     def buildGraph(self, javadocs):
-        return
         for javadoc in javadocs:
+            print javadoc
             if isinstance(javadoc.sourceLine, ClassLine):
                 pass
             elif isinstance(javadoc.sourceLine, MethodLine):
@@ -40,12 +41,14 @@ class Wiki:
             if isinstance(javadoc.sourceLine, ClassLine):
                 currentClass = javadoc.sourceLine.name
                 text += self.mName(javadoc.sourceLine.name, 2)
+                text += self.mLink(javadoc.getContext().getClsName())
                 text += self.mModifier(javadoc.sourceLine.modifiers)
                 text += self.mTags(javadoc.blockTags)
                 text += self.mSource(javadoc.sourceLine.sourceLine)
                 self.createPage(javadoc.sourceLine.name, text)
             elif isinstance(javadoc.sourceLine, MethodLine):
                 text += self.mName(javadoc.sourceLine.name, 3)
+                text += self.mLink(javadoc.getContext().getClsName())
                 text += self.mModifier(javadoc.sourceLine.modifiers)
                 try:
                     text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
@@ -56,6 +59,7 @@ class Wiki:
                 self.appendPage(currentClass, text)
             elif isinstance(javadoc.sourceLine, FieldLine):
                 text += self.mName(javadoc.sourceLine.name, 3)
+                text += self.mLink(javadoc.getContext().getClsName())
                 text += self.mModifier(javadoc.sourceLine.modifiers)
                 text += self.mType(javadoc.sourceLine.type)
                 text += self.mTags(javadoc.blockTags, True)
@@ -69,7 +73,22 @@ class Wiki:
     '''
     def mSource(self, source):
         if source:
-            return '{}\n\n'.format(code('java', source))
+            return '{}\n\n'.format(code('java', source[:-1]))
+        return ''
+    
+    '''
+    Markdown link
+    '''
+    def mLink(self, link):
+        if link:
+            links = link.split('.')
+            flinks = []
+            for link in links:
+                link = markup_formatter.link(link, link)
+                flinks.append(link)
+            flinks = '[{}]'.format('] ['.join(flinks))
+            return '**LINK** {}\n\n'.format(flinks)
+        return ''
     
     '''
     Markdown modifier
@@ -130,6 +149,8 @@ class Wiki:
                 if italic and tag.name.upper() == 'PARAM':
                     content = str(content).split()
                     text += ('\t*{}*, {}\n\n').format(content[0], ' '.join(content[1:]))
+                elif isinstance(content, InlineTag):
+                    pass
                 else:
                     text += ('\t' + str(content) + '\n\n')
         return text
@@ -182,4 +203,4 @@ class Wiki:
             strbuild = '{{ %s }}' % tag
             for line in fileinput.FileInput(file, inplace=1):
                 line = line.replace(strbuild, text)
-                print line,        
+                print line,
