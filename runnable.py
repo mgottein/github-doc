@@ -21,9 +21,8 @@ def getReadme():
     return readme
 
 def collateData(repodir):
-    javadocs = getJavadocText(open(path.join(repodir, 'Test.java'), 'r'))
-    for javadoc in javadocs:
-        print JavadocComment(javadoc)
+    for javadoc in getJavadocs(open(path.join(repodir, 'Test.java'), 'r')):
+        print javadoc
 
 if __name__ == '__main__':
     REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)

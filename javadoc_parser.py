@@ -68,28 +68,28 @@ A single javadoc comment. Can have a main description and tag section, or only o
 '''
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
-    def __init__(self, text):
+    def __init__(self, startLine, endLine, text):
+        self.startLine = startLine
+        self.endLine = endLine
         lines = text.splitlines()[1:-1]
         strippedLines = map(lambda line : JavadocComment.commentStripRe.sub('', line), lines)
-        i = 0
         self.mainDesc = None
         self.blockTags = []
         curBlockTagText = None
-        while i < len(strippedLines):
-            if len(strippedLines[i]) > 0:
-                if strippedLines[i][0] == '@':
+        for line in strippedLines:
+            if len(line) > 0:
+                if line[0] == '@':
                     if curBlockTagText:
                         self.blockTags.append(BlockTag(curBlockTagText))
-                    curBlockTagText = strippedLines[i]
+                    curBlockTagText = line
                 else:
                     if curBlockTagText:
-                        curBlockTagText = os.linesep.join([curBlockTagText, strippedLines[i]])
+                        curBlockTagText = os.linesep.join([curBlockTagText, line])
                     else:
                         if self.mainDesc:
-                            self.mainDesc = os.linesep.join([self.mainDesc, strippedLines[i]])
+                            self.mainDesc = os.linesep.join([self.mainDesc, line])
                         else:
-                            self.mainDesc = strippedLines[i]
-            i = i + 1
+                            self.mainDesc = line
         if curBlockTagText:
             self.blockTags.append(BlockTag(curBlockTagText))
         if self.mainDesc:
@@ -103,11 +103,11 @@ class JavadocComment:
         return self.blockTags
 
     def __repr__(self):
-        return "JavaDocComment: MainDesc? {} BlockTags? {}".format(self.mainDesc, self.blockTags)
+        return "JavaDocComment: StartLine {} EndLine {} MainDesc? {} BlockTags? {}".format(self.startLine, self.endLine, self.mainDesc, self.blockTags)
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 
-def getJavadocText(f):
+def getJavadocs(f):
     java = f.read();
-    javadocs = javadocRe.findall(java)
-    return javadocs
+    for m in javadocRe.finditer(java):
+        yield JavadocComment(java.count(os.linesep, 0, m.start()), java.count(os.linesep, 0, m.end()), m.group(0))
