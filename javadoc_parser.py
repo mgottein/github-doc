@@ -167,16 +167,13 @@ class InlineTag(Tag):
 
 class SourceLineFactory:
     def __init__(self):
-        self.classRe = re.compile(r'class\s*[^\{]+\{')
-        self.interfaceRe = re.compile(r'interface\s*[^\{]+\{')
+        self.classRe = re.compile(r'(class|interface)\s*[^\{]+\{')
         self.methodRe = re.compile(r'\([^\)]*\)\s*\{')
         self.fieldRe = re.compile(r';')
 
     def parse(self, sourceLine):
         if self.classRe.search(sourceLine):
             return ClassLine(sourceLine)
-        elif self.interfaceRe.search(sourceLine):
-            return InterfaceLine(sourceLine)
         elif self.methodRe.search(sourceLine):
             return MethodLine(sourceLine)
         elif self.fieldRe.search(sourceLine):
@@ -201,19 +198,11 @@ class ClassLine(SourceLine):
     def __init__(self, sourceLine):
         SourceLine.__init__(self, sourceLine)
         components = sourceLine.split()
+        self.isInterface = "interface" in sourceLine
         self.name = components[len(self.modifiers) + 1]
 
     def __repr__(self):
-        return "{} class {}".format(' '.join(self.modifiers), self.name)
-
-class InterfaceLine(SourceLine):
-    def __init__(self, sourceLine):
-        SourceLine.__init__(self, sourceLine)
-        components = sourceLine.split()
-        self.name = components[len(self.modifiers) + 1]
-
-    def __repr__(self):
-        return "{} interface {}".format(' '.join(self.modifiers), self.name)
+        return "{} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name)
 
 class MethodLine(SourceLine):
     typeParamsRe = re.compile(r'\<.+\>')
