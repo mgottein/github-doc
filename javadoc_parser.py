@@ -1,6 +1,96 @@
 import re
 import os
 
+
+class LinkParser:
+    aRe = re.compile(r'\<a\s+href\=\".*\"\>.*\</a\>')
+    def parse(self, text):
+        if text[0] == '"':
+            return StringLink(text)
+        elif LinkParser.aRe.search(text):
+            return HtmlLink(text)
+        else:
+            return JavadocLink(text)
+'''
+String link to nowhere
+'''
+class StringLink:
+    strRe = re.compile(r'\".*\"')
+    def __init__(self, text):
+        self.str = None
+        strM = StringLink.strRe.search(text)
+        if strM:
+            self.str = strM.group(0)[1:-1]
+
+    def getStr(self):
+        return self.str
+
+    def __repr__(self):
+        return "StringLink: {}".format(self.str)
+'''
+HTML link to another webpage
+'''
+class HtmlLink:
+    aRe = re.compile(r'\<a\s+href\=\".*\"\>')
+    hrefRe = re.compile(r'\".*\"')
+    labelRe = re.compile(r'\>.*\<')
+    def __init__(self, text):
+        self.href = None
+        self.label = None
+        aM = HtmlLink.aRe.search(text)
+        if aM:
+            a = aM.group(0)
+            hrefM = HtmlLink.hrefRe.search(a)
+            if hrefM:
+                self.href = hrefM.group(0)[1:-1]
+        labelM = HtmlLink.labelRe.search(text)
+        if labelM:
+            self.label = labelM.group(0)[1:-1]
+
+    def getHref(self):
+        return self.href
+
+    def getLabel(self):
+        return self.label
+
+    def __repr__(self):
+        return "HtmlLink: {} {}".format(self.href, self.label)
+
+'''
+Javadoc link to another javadoc
+'''
+class JavadocLink:
+    classRe = re.compile(r'^[^#\s]*')
+    fieldRe = re.compile(r'#[^\s\(]+')
+    methodRe = re.compile(r'#[^\s^\(]*\(.*\)')
+
+    def __init__(self, text):
+        self.cls = None
+        self.method = None
+        self.field = None
+        classM = JavadocLink.classRe.search(text)
+        if classM:
+            self.cls = classM.group(0)
+        methodM = JavadocLink.methodRe.search(text)
+        if methodM:
+            self.method = methodM.group(0)[1:]
+        else:
+            fieldM = JavadocLink.fieldRe.search(text)
+            if fieldM:
+                self.field = fieldM.group(0)[1:]
+
+    def getCls(self):
+        return self.cls
+
+    def getMethod(self):
+        return self.method
+
+    def getField(self):
+        return self.field
+
+    def __repr__(self):
+        return "JavadocLink: {}#{}/{}".format(self.cls, self.method, self.field)
+
 '''
 Text in a javadoc that may have inline tags embedded in it
 '''
@@ -26,8 +116,12 @@ class Text:
 Tag in a javadoc. Means something special
 '''
 class Tag:
+    linkParser = LinkParser()
     whitespaceRe = re.compile(r'\s+')
     def __init__(self, text):
+        self.name = None
+        self.text = None
+        self.link = None
         self.parse(text)
 
     def getName(self):
@@ -36,8 +130,14 @@ class Tag:
     def getText(self):
         return self.text
 
+    def getLink(self):
+        return self.link
+
     def __repr__(self):
-        return "{}: Name {} {}".format(self.__class__.__name__, self.name, self.text)
+        if self.link:
+            return "{}: Name {} {} {}".format(self.__class__.__name__, self.name, self.text, self.link)
+        else:
+            return "{}: Name {} {}".format(self.__class__.__name__, self.name, self.text)
 
 '''
 Block tag in a javadoc. Stands alone and has text associated with it that could have inline tags
@@ -62,6 +162,8 @@ class InlineTag(Tag):
         m = Tag.whitespaceRe.search(text)
         self.name = text[2:m.start()]
         self.text = text[m.end():-1].strip()
+        if self.name == 'link':
+            self.link = Tag.linkParser.parse(self.text)
 
 class SourceLineFactory:
     def __init__(self):
