@@ -26,6 +26,7 @@ class Text:
 Tag in a javadoc. Means something special
 '''
 class Tag:
+    whitespaceRe = re.compile(r'\s+')
     def __init__(self, text):
         self.parse(text)
 
@@ -46,8 +47,9 @@ class BlockTag(Tag):
         Tag.__init__(self, text)
 
     def parse(self, text):
-        self.name = text[1:text.index(' ')]
-        self.text = Text(text[text.index(' '):].strip())
+        m = Tag.whitespaceRe.search(text)
+        self.name = text[1:m.start()]
+        self.text = Text(text[m.end():].strip())
 
 '''
 Inline tag in a javadoc. Inside free-form text and has text associated with it
@@ -57,8 +59,9 @@ class InlineTag(Tag):
         Tag.__init__(self, text)
 
     def parse(self, text):
-        self.name = text[2:text.index(' ')]
-        self.text = text[text.index(' '):-1].strip()
+        m = Tag.whitespaceRe.search(text)
+        self.name = text[2:m.start()]
+        self.text = text[m.end():-1].strip()
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
@@ -101,7 +104,6 @@ class JavadocComment:
 
     def __repr__(self):
         return "JavaDocComment: MainDesc? {} BlockTags? {}".format(self.mainDesc, self.blockTags)
-
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 
