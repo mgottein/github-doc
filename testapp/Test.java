@@ -15,11 +15,11 @@ public class Test {
    * <p>
    * This is a longer description
    * <p>
-   * More description
+   * More description {@link TEST_LINK}
    *
    * @param args Arguments for the program
    *     asdfasdf reareRRAREAREAR
-   * @param garbage this is garbabge
+   * @param garbage this is garbabge {@link this_should_work} asdf {@link test}
    */
   public static void main(String[] args) {
     System.out.println("Hello World~");

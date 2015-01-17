@@ -15,6 +15,6 @@ class Wiki:
                 print line,
     
     def create(self):
-        src = path.join(path.dirname(path.realpath(__file__)), 'wiki-template\\')
+        src = path.join(path.dirname(path.realpath(__file__)), 'wiki-template')
         dest = self.WIKIDIR
         distutils.dir_util.copy_tree(src, dest)

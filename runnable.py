@@ -19,5 +19,5 @@ def collateData(repodir):
 
 if __name__ == '__main__':
     REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
-    #collateData()
-    buildWiki()
+    collateData(REPODIR)
+   # buildWiki()
