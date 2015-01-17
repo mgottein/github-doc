@@ -349,7 +349,24 @@ Line bounds are 0-index based
 '''
 class JavadocComment:
     commentStripRe = re.compile(r'^[\s\*]*')
-    def __init__(self, context, text, lineBounds, sourceLine):
+
+    @staticmethod
+    def createdummyclass(context, sourceLine):
+        dummy = JavadocComment()
+        dummy.context = context
+        dummy.sourceLine = sourceLine
+        dummy.lineBounds = None
+        dummy.mainDesc = None
+        dummy.blockTags = None
+        return dummy
+
+    @staticmethod
+    def create(context, text, lineBounds, sourceLine):
+        real = JavadocComment()
+        real.parse(context, text, lineBounds, sourceLine)
+        return real
+
+    def parse(self, context, text, lineBounds, sourceLine):
         self.context = context
         self.lineBounds = lineBounds
         self.sourceLine = sourceLine
@@ -421,14 +438,20 @@ def getClasses(java):
         classList.append(sourceLineFactory.create(java, sourceLineM))
     return classList
 
-def getJavadocs(f):
-    java = f.read()
-    classList = getClasses(java)
+def getClassStack(classList, sourceLine):
+    classStack = []
+    for cls in classList:
+        if cls.getBounds()[0] < sourceLine.getBounds()[0] and cls.getBounds()[1] > sourceLine.getBounds()[1]:
+            classStack.append(cls)
+    return classStack
+
+def getPackage(java):
     packageM = packageRe.search(java)
     package = None
-
     if packageM:
         package = packageM.group(0).split()[-1][:-1]
+
+def getJavadocs(java, package, classList):
     for javadocTextM in javadocRe.finditer(java):
         javadocText = javadocTextM.group(0)
         startLine = java.count('\n', 0, javadocTextM.start())
@@ -437,11 +460,7 @@ def getJavadocs(f):
         if sourceLineM:
             sourceLine = sourceLineFactory.create(java, sourceLineM)
             if sourceLine:
-                classStack = []
-                for cls in classList:
-                    if cls.getBounds()[0] <= sourceLine.getBounds()[0] and cls.getBounds()[1] >= sourceLine.getBounds()[1]:
-                        classStack.append(cls)
-                javadocComment = JavadocComment(Context(package, classStack), javadocText, (startLine, endLine), sourceLine)
+                javadocComment = JavadocComment.create(Context(package, getClassStack(classList, sourceLine)), javadocText, (startLine, endLine), sourceLine)
                 yield javadocComment
 
 '''
@@ -454,14 +473,50 @@ def getFiles(root):
             files.append(os.path.join(dirpath, filename))
     return files
 
-def genJavadocGraph(root):
-    javadocs = {}
-    for f in getFiles(root):
-        for javadoc in getJavadocs(open(f, 'r')):
-            javadocs[JavadocLink.fromComment(javadoc)] = javadoc
-    for _, javadoc in javadocs.iteritems():
-        for edge in javadoc.getEdges():
-            if edge in javadocs:
-                edge.setJavadoc(javadocs[edge])
-    return javadocs.values()
+class JavadocGraph:
 
+    def __init__(self, root):
+        self.javadocs = {}
+        for f in getFiles(root):
+            java = open(f, 'r').read()
+            package = getPackage(java)
+            fileClassList = getClasses(java)
+            addedClassList = []
+            for javadoc in getJavadocs(java, package, fileClassList):
+                if isinstance(javadoc.getSourceLine(), ClassLine):
+                    addedClassList.add(javadoc.getSourceLine())
+                self.javadocs[JavadocLink.fromComment(javadoc)] = javadoc
+            for cls in getClasses(java):
+                if cls not in addedClassList:
+                    dummyJavadoc = JavadocComment.createdummyclass(Context(package, getClassStack(fileClassList, cls)), cls)
+                    self.javadocs[JavadocLink.fromComment(dummyJavadoc)] = dummyJavadoc
+        for _, javadoc in self.javadocs.iteritems():
+            for edge in javadoc.getEdges():
+                if edge in self.javadocs:
+                    edge.setJavadoc(self.javadocs[edge])
+
+    def getTopLevelClasses(self):
+        for link, javadoc in self.javadocs.iteritems():
+            if isinstance(javadoc.getSourceLine(), ClassLine):
+                if len(javadoc.getContext().getClsStack()) == 0:
+                    yield javadoc
+
+    def getMethods(self, javadocClass):
+        for link, javadoc in self.javadocs.iteritems():
+            if isinstance(javadoc.getSourceLine(), MethodLine):
+                if link.getCls() == JavadocLink.fromComment(javadocClass).getCls():
+                    yield javadoc
+
+    def getFields(self, javadocClass):
+        for link, javadoc in self.javadocs.iteritems():
+            if isinstance(javadoc.getSourceLine(), FieldLine):
+                if link.getCls() == JavadocLink.fromComment(javadocClass).getCls():
+                    yield javadoc
+
+    def getInnerClasses(self, javadocClass):
+        for link, javadoc in self.javadocs.iteritems():
+            if isinstance(javadoc.getSourceLine(), ClassLine):
+                if javadoc.getContext().getClsName() == JavadocLink.fromComment(javadocClass).getCls():
+                    yield javadoc
+
+    
