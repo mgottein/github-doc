@@ -1,4 +1,4 @@
 *.class
 .project
 .pydevproject
-.pyc
+*.pyc
