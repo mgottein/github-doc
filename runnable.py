@@ -30,6 +30,7 @@ if __name__ == '__main__':
     
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
+    
     def genClass(classNode):
         wiki.buildClass(classNode)
         for methodNode in graph.getMethods(classNode):
