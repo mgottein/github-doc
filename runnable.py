@@ -30,10 +30,14 @@ if __name__ == '__main__':
     
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
+    def genClass(classNode):
+        wiki.buildClass(classNode)
+        for methodNode in graph.getMethods(classNode):
+            wiki.buildMethod(methodNode, classNode)
+        for fieldNode in graph.getFields(classNode):
+            wiki.buildField(fieldNode, classNode)
+        for innerClassNode in graph.getInnerClasses(classNode):
+            genClass(innerClassNode)
     
     for topLevelClass in graph.getTopLevelClasses():
-        wiki.buildClass(topLevelClass)
-        for method in graph.getMethods(topLevelClass):
-            wiki.buildMethod(method, topLevelClass)
-        for field in graph.getFields(topLevelClass):
-            wiki.buildField(field, topLevelClass)
+        genClass(topLevelClass)
