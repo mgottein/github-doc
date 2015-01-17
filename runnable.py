@@ -5,6 +5,9 @@ from wikibuilder import *
 APPNAME = 'testapp'
 REPODIR = ''
 
+'''
+Instantiate and build the custom wiki
+'''
 def buildWiki():
     wikidir = REPODIR + '\\' + APPNAME + '.wiki\\'
     wiki = Wiki(wikidir)
@@ -18,12 +21,18 @@ def buildWiki():
     wiki.createPage("TEST_PAGE", text)
     wiki.setTag('test', 'UH')
 
+'''
+Return project readme file
+'''
 def getReadme():
     readmeFile = open(path.join(REPODIR, 'README.md'), 'r')
     readme = readmeFile.read()
     readmeFile.close()
     return readme
 
+'''
+Parse project javadocs and read data
+'''
 def collateData(repodir):
     for javadoc in getJavadocs(open(path.join(repodir, 'Test.java'), 'r')):
         print javadoc
