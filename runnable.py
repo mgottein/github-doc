@@ -26,16 +26,6 @@ def getReadme():
     return readme
 
 '''
-Return list of all .java paths
-'''
-def getFiles():
-    files = []
-    for dirpath, dirnames, filenames in os.walk(REPODIR):
-        for filename in [f for f in filenames if f.endswith('.java')]:
-            files.append(os.path.join(dirpath, filename))
-    return files
-
-'''
 Parse project javadocs and read data
 '''
 def collateData(files):
@@ -47,6 +37,6 @@ def collateData(files):
     return javadocs
 
 if __name__ == '__main__':
-    files = getFiles()
-    javadocs = collateData(files)
-    buildWiki(javadocs)
+    javadocs = genJavadocGraph(REPODIR)
+    for link, javadoc in javadocs.iteritems():
+        print javadoc
