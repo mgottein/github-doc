@@ -17,19 +17,6 @@ class Wiki:
     def __init__(self, wikidir):
         self.WIKIDIR = wikidir
         self.create()
-    
-    '''
-    Use the java docs to build the wiki graph network
-    '''
-    def buildGraph(self, javadocs):
-        for javadoc in javadocs:
-            print javadoc
-            if isinstance(javadoc.sourceLine, ClassLine):
-                pass
-            elif isinstance(javadoc.sourceLine, MethodLine):
-                pass
-            elif isinstance(javadoc.sourceLine, FieldLine):
-                pass
         
     '''
     Use the java docs to implement the wiki pages
@@ -37,8 +24,10 @@ class Wiki:
     def buildDocs(self, javadocs):
         currentClass = 'DEFAULT'
         for javadoc in javadocs:
+            print javadoc.getContext().getClsStack()
             text = ''
             if isinstance(javadoc.sourceLine, ClassLine):
+                print 'CLASS {}'.format(javadoc.sourceLine.name)
                 currentClass = javadoc.sourceLine.name
                 text += self.mName(javadoc.sourceLine.name, 2)
                 text += self.mLink(javadoc.getContext().getClsName())

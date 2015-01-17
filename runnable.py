@@ -13,7 +13,6 @@ def buildWiki(javadocs=None):
     wiki = Wiki(wikidir)
     
     if javadocs:
-        wiki.buildGraph(javadocs)
         wiki.buildDocs(javadocs)
 
 '''
