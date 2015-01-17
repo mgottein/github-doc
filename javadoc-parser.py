@@ -14,16 +14,18 @@ def extractTags(javadocs):
     for javadoc in javadocs:
         tags = []
         text = []
-        for line in javadoc.split('\n'):
+        lines = javadoc.split('\n')
+        i = 1
+        while i < len(lines):
+            line = lines[i]
             if tagRegexp.match(line):
-                tags.append(line)
+                tags.append((i, line))
             else:
-                text.append(line)
+                text.append((i, line))
+            i = i + 1
         extractedTags.append(tags)
         extractedText.append(text)
     return (extractedTags, extractedText)
-
-
 
 javadocs = getJavadocs(open('Test.java', 'r'))
 
