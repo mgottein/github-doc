@@ -21,6 +21,7 @@ class Wiki:
     Use the java docs to build the wiki graph network
     '''
     def buildGraph(self, javadocs):
+        return
         for javadoc in javadocs:
             if isinstance(javadoc.sourceLine, ClassLine):
                 pass
@@ -33,35 +34,74 @@ class Wiki:
     Use the java docs to implement the wiki pages
     '''
     def buildDocs(self, javadocs):
-        currentClass = 'Default'
+        currentClass = None
         for javadoc in javadocs:
             text = ''
             if isinstance(javadoc.sourceLine, ClassLine):
                 currentClass = javadoc.sourceLine.name
-                text += ('{}\n'.format(hx(2, javadoc.sourceLine.name)))
-                text += ('**MODIFIER** {}\n\n'.format(', '.join(javadoc.sourceLine.modifiers)))
-                text += ('{}\n\n'.format(self.formatTag(javadoc.blockTags)))
-                text += ('{}\n\n'.format(code('java', javadoc.sourceLine.sourceLine)))
+                text += self.mName(javadoc.sourceLine.name, 2)
+                text += self.mModifier(javadoc.sourceLine.modifiers)
+                text += self.mTags(javadoc.blockTags)
+                text += self.mSource(javadoc.sourceLine.sourceLine)
                 self.createPage(javadoc.sourceLine.name, text)
             elif isinstance(javadoc.sourceLine, MethodLine):
-                text += ('{}\n'.format(hx(3, javadoc.sourceLine.name)))
-                text += ('**MODIFIER** {}\n\n'.format(', '.join(javadoc.sourceLine.modifiers)))
+                text += self.mName(javadoc.sourceLine.name, 3)
+                text += self.mModifier(javadoc.sourceLine.modifiers)
                 try:
                     text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
                 except AttributeError:
                     pass
-                text += ('{}\n\n'.format(self.formatTag(javadoc.blockTags, True)))
-                text += ('{}\n\n'.format(code('java', javadoc.sourceLine.sourceLine)))
+                text += self.mTags(javadoc.blockTags, True)
+                text += self.mSource(javadoc.sourceLine.sourceLine)
                 self.appendPage(currentClass, text)
             elif isinstance(javadoc.sourceLine, FieldLine):
-                text += ('{}\n'.format(hx(3, javadoc.sourceLine.name)))
-                text += ('**MODIFIER** {}\n\n'.format(', '.join(javadoc.sourceLine.modifiers)))
-                text += ('**TYPE** {}\n\n'.format(italic(javadoc.sourceLine.type)))
-                text += ('{}\n\n'.format(self.formatTag(javadoc.blockTags, True)))
-                text += ('{}\n\n'.format(code('java', javadoc.sourceLine.sourceLine)))
+                text += self.mName(javadoc.sourceLine.name, 3)
+                text += self.mModifier(javadoc.sourceLine.modifiers)
+                text += self.mType(javadoc.sourceLine.type)
+                text += self.mTags(javadoc.blockTags, True)
+                text += self.mSource(javadoc.sourceLine.sourceLine)
                 self.appendPage(currentClass, text)
             else:
                 print javadoc.sourceLine
+    
+    '''
+    Markdown source
+    '''
+    def mSource(self, source):
+        if source:
+            return '{}\n\n'.format(code('java', source))
+    
+    '''
+    Markdown modifier
+    '''
+    def mModifier(self, modifiers):
+        if modifiers:
+            return '**MODIFIER** {}\n\n'.format(', '.join(modifiers))
+        return ''
+        
+    '''
+    Markdown name
+    '''
+    def mName(self, name, weight):
+        if name:
+            return '{}\n'.format(hx(weight, name))
+        return ''
+        
+    '''
+    Markdown tags
+    '''
+    def mTags(self, tags, italic=False):
+        if tags:
+            return '{}\n\n'.format(self.formatTag(tags, italic))
+        return ''
+        
+    '''
+    Markdown type
+    '''
+    def mType(self, type):
+        if type:
+            return '**TYPE** {}\n\n'.format(italic(type))
+        return ''
     
     '''
     Format description
@@ -100,6 +140,8 @@ class Wiki:
     def create(self):
         src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
         dest = self.WIKIDIR
+        if not os.path.exists(dest):
+            os.makedirs(dest)        
         # Remove existing files
         for file in os.listdir(dest):
             path = os.path.join(dest, file)
