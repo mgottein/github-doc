@@ -6,11 +6,18 @@ def isLineTag(line):
     return tagRegexp.match(line)
 
 class Tag:
-    def __init__(self, text):
-        atIndex = text.index('@')
+    def __init__(self, lineNum, text):
+        self.components = text.split(r'\s*')
+        self.lineNum = lineNum
 
+    def __str__(self):
+        return str(self.components)
 
-class Comment:
+    def getComponents(self):
+        return self.components
+
+    def getLineNum(self):
+        return self.lineNum
 
 javadocRegexp = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 
@@ -30,19 +37,11 @@ def extractTags(javadocs):
         i = 1
         while i < len(lines):
             line = lines[i]
-            if tagRegexp.match(line):
-                tags.append((i, line))
+            if isLineTag(line):
+                tags.append(Tag(i, line))
             else:
                 text.append((i, line))
             i = i + 1
         extractedTags.append(tags)
         extractedText.append(text)
     return (extractedTags, extractedText)
-
-javadocs = getJavadocs(open('testapp/Test.java', 'r'))
-
-extracted = extractTags(javadocs)
-print "Tags"
-print extracted[0]
-print "Text"
-print extracted[1]
