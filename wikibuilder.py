@@ -10,8 +10,6 @@ Class to create and customize the Wiki
 '''
 class Wiki:
     
-    
-    
     '''
     Initialize wiki with working directory and call create
     '''
@@ -35,7 +33,7 @@ class Wiki:
     Use the java docs to implement the wiki pages
     '''
     def buildDocs(self, javadocs):
-        currentClass = None
+        currentClass = 'Default'
         for javadoc in javadocs:
             text = ''
             if isinstance(javadoc.sourceLine, ClassLine):
@@ -102,6 +100,15 @@ class Wiki:
     def create(self):
         src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
         dest = self.WIKIDIR
+        # Remove existing files
+        for file in os.listdir(dest):
+            path = os.path.join(dest, file)
+            try:
+                if os.path.isfile(path):
+                    os.unlink(path)
+            except Exception, e:
+                print e
+        # Copy template directory
         distutils.dir_util.copy_tree(src, dest)
     
     '''
@@ -125,7 +132,7 @@ class Wiki:
     '''
     Modify a template tag to be a custom value
     '''
-    def setTag(self, tag, text):
+    def setTemplate(self, tag, text):
         if isinstance(text, list):
             text = '\n'.join(text)
         for title in os.listdir(self.WIKIDIR):

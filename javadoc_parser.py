@@ -228,7 +228,7 @@ class SourceLine:
     def getName(self):
         return self.name
 
-    def getModifiers():
+    def getModifiers(self):
         return self.modifiers
 
 class ClassLine(SourceLine):
