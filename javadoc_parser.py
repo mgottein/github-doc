@@ -323,9 +323,10 @@ Package can be none (default package)
 Class can be none (top level class javadoc)
 '''
 class Context:
-    def __init__(self, package, clsStack):
+    def __init__(self, f, package, clsStack):
         self.package = package
         self.clsStack = clsStack
+        self.f = f
 
     def getPackage(self):
         return self.package
@@ -335,6 +336,9 @@ class Context:
 
     def getClsName(self):
         return '.'.join([cls.getName() for cls in self.clsStack])
+
+    def getFileName(self):
+        return self.f
 
     def __repr__(self):
         if self.package:
@@ -451,7 +455,7 @@ def getPackage(java):
     if packageM:
         package = packageM.group(0).split()[-1][:-1]
 
-def getJavadocs(java, package, classList):
+def getJavadocs(java, f, package, classList):
     for javadocTextM in javadocRe.finditer(java):
         javadocText = javadocTextM.group(0)
         startLine = java.count('\n', 0, javadocTextM.start())
@@ -460,7 +464,7 @@ def getJavadocs(java, package, classList):
         if sourceLineM:
             sourceLine = sourceLineFactory.create(java, sourceLineM)
             if sourceLine:
-                javadocComment = JavadocComment.create(Context(package, getClassStack(classList, sourceLine)), javadocText, (startLine, endLine), sourceLine)
+                javadocComment = JavadocComment.create(Context(f, package, getClassStack(classList, sourceLine)), javadocText, (startLine, endLine), sourceLine)
                 yield javadocComment
 
 '''
@@ -482,13 +486,13 @@ class JavadocGraph:
             package = getPackage(java)
             fileClassList = getClasses(java)
             addedClassList = []
-            for javadoc in getJavadocs(java, package, fileClassList):
+            for javadoc in getJavadocs(java, f, package, fileClassList):
                 if isinstance(javadoc.getSourceLine(), ClassLine):
                     addedClassList.add(javadoc.getSourceLine())
                 self.javadocs[JavadocLink.fromComment(javadoc)] = javadoc
             for cls in getClasses(java):
                 if cls not in addedClassList:
-                    dummyJavadoc = JavadocComment.createdummyclass(Context(package, getClassStack(fileClassList, cls)), cls)
+                    dummyJavadoc = JavadocComment.createdummyclass(Context(f, package, getClassStack(fileClassList, cls)), cls)
                     self.javadocs[JavadocLink.fromComment(dummyJavadoc)] = dummyJavadoc
         for _, javadoc in self.javadocs.iteritems():
             for edge in javadoc.getEdges():
