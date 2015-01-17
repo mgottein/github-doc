@@ -393,7 +393,7 @@ class JavadocComment:
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
-sourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
+sourceLineRe = re.compile(r'[^\;{]*[\;\{]', re.DOTALL)
 bracketRe = re.compile(r'[\{\}]')
 
 def getSources(f):
