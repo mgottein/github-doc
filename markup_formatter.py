@@ -20,13 +20,19 @@ def italic(text):
 Image link (inline)
 '''
 def image(link, alt_text=None):
-    return '![alt text]({} "{}")'.format(link, alt_text)
+    if alt_text:
+        return '![alt text]({} "{}")'.format(link, alt_text)
+    else:
+        return '![alt text]({})'.format(link)
     
 '''
 Quote text
 '''
-def quote(text):
-    return '>{}'.format(text)
+def quote(text, cite=None):
+    if cite:
+        return '> {}\n> <cite>{}</cite>'.format(text, cite)
+    else:
+        return '> {}'.format(text)
 
 '''
 Syntax highlighting
