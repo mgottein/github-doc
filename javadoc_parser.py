@@ -396,6 +396,11 @@ packageRe = re.compile(r'package\s+.*;')
 sourceLineRe = re.compile(r'[^;{]*(;|{)', re.DOTALL)
 bracketRe = re.compile(r'[\{\}]')
 
+def getSources(f):
+    java = f.read()
+    sourceFactory = SourceLineFactory()
+    print sourceFactory
+
 def getJavadocs(f):
     java = f.read();
     packageM = packageRe.search(java)
