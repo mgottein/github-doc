@@ -20,42 +20,45 @@ class Wiki:
         
     '''
     Use the java docs to implement the wiki pages
-    '''
-    def buildDocs(self, javadocs):
-        currentClass = 'DEFAULT'
-        for javadoc in javadocs:
-            print javadoc.getContext().getClsStack()
-            text = ''
-            if isinstance(javadoc.sourceLine, ClassLine):
-                print 'CLASS {}'.format(javadoc.sourceLine.name)
-                currentClass = javadoc.sourceLine.name
-                text += self.mName(javadoc.sourceLine.name, 2)
-                text += self.mLink(javadoc.getContext().getClsName())
-                text += self.mModifier(javadoc.sourceLine.modifiers)
-                text += self.mTags(javadoc.blockTags)
-                text += self.mSource(javadoc.sourceLine.sourceLine)
-                self.createPage(javadoc.sourceLine.name, text)
-            elif isinstance(javadoc.sourceLine, MethodLine):
-                text += self.mName(javadoc.sourceLine.name, 3)
-                text += self.mLink(javadoc.getContext().getClsName())
-                text += self.mModifier(javadoc.sourceLine.modifiers)
-                try:
-                    text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
-                except AttributeError:
-                    pass
-                text += self.mTags(javadoc.blockTags, True)
-                text += self.mSource(javadoc.sourceLine.sourceLine)
-                self.appendPage(currentClass, text)
-            elif isinstance(javadoc.sourceLine, FieldLine):
-                text += self.mName(javadoc.sourceLine.name, 3)
-                text += self.mLink(javadoc.getContext().getClsName())
-                text += self.mModifier(javadoc.sourceLine.modifiers)
-                text += self.mType(javadoc.sourceLine.type)
-                text += self.mTags(javadoc.blockTags, True)
-                text += self.mSource(javadoc.sourceLine.sourceLine)
-                self.appendPage(currentClass, text)
-            else:
-                print javadoc.sourceLine
+    '''    
+    def buildClass(self, javadoc):
+        text = ''
+        currentClass = javadoc.sourceLine.name
+        text += self.mName(javadoc.sourceLine.name, 2)
+        text += self.mLink(javadoc.getContext().getClsName())
+        text += self.mModifier(javadoc.sourceLine.modifiers)
+        text += self.mTags(javadoc.blockTags)
+        text += self.mSource(javadoc.sourceLine.sourceLine)
+        self.createPage(javadoc.sourceLine.name, text)
+    
+    def buildMethod(self, javadoc, currentClass):
+        text = ''
+        text += self.mName(javadoc.sourceLine.name, 3)
+        text += self.mLink(javadoc.getContext().getClsName())
+        text += self.mModifier(javadoc.sourceLine.modifiers)
+        try:
+            text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
+        except AttributeError:
+            pass
+        text += self.mTags(javadoc.blockTags, True)
+        text += self.mSource(javadoc.sourceLine.sourceLine)
+        if currentClass.blockTags or currentClass.mainDesc:
+            self.appendPage(currentClass, text)
+        else:
+            self.appendPage(javadoc.sourceLine.name, text)
+    
+    def buildField(self, javadoc, currentClass):
+        text = ''
+        text += self.mName(javadoc.sourceLine.name, 3)
+        text += self.mLink(javadoc.getContext().getClsName())
+        text += self.mModifier(javadoc.sourceLine.modifiers)
+        text += self.mType(javadoc.sourceLine.type)
+        text += self.mTags(javadoc.blockTags, True)
+        text += self.mSource(javadoc.sourceLine.sourceLine)
+        if currentClass.blockTags or currentClass.mainDesc:
+            self.appendPage(currentClass, text)
+        else:
+            self.appendPage(javadoc.sourceLine.name, text)
     
     '''
     Markdown source
@@ -134,14 +137,12 @@ class Wiki:
         text = ''
         for tag in blockTags:
             text += (bold(tag.name.upper()))
-            for content in tag.text.content:
+            for content in tag.text.content:            
                 if italic and tag.name.upper() == 'PARAM':
                     content = str(content).split()
                     text += ('\t*{}*, {}\n\n').format(content[0], ' '.join(content[1:]))
-                elif isinstance(content, InlineTag):
-                    pass
                 else:
-                    text += ('\t' + str(content) + '\n\n')
+                    text += ('\t' + str(content) + '\n')
         return text
     
     '''

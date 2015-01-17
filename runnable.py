@@ -6,16 +6,6 @@ APPNAME = 'testapp'
 REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
 
 '''
-Instantiate and build the custom wiki
-'''
-def buildWiki(javadocs=None):
-    wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
-    wiki = Wiki(wikidir)
-    
-    if javadocs:
-        wiki.buildDocs(javadocs)
-
-'''
 Return project readme file
 '''
 def getReadme():
@@ -37,9 +27,13 @@ def collateData(files):
 
 if __name__ == '__main__':
     graph = JavadocGraph(REPODIR)
-    for javadoc in graph.getTopLevelClasses():
-        methods = list(graph.getMethods(javadoc))
-        if len(methods) > 0:
-            print "Class",javadoc.getSourceLine().getName()
-            for javadocMethod in methods:
-                print "Method", javadocMethod.getSourceLine().getName()
+    
+    wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
+    wiki = Wiki(wikidir)
+    
+    for topLevelClass in graph.getTopLevelClasses():
+        wiki.buildClass(topLevelClass)
+        for method in graph.getMethods(topLevelClass):
+            wiki.buildMethod(method, topLevelClass)
+        for field in graph.getFields(topLevelClass):
+            wiki.buildField(field, topLevelClass)
