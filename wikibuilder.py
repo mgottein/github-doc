@@ -2,6 +2,8 @@ import os
 import fileinput
 import distutils.core
 
+from markup_formatter import *
+
 '''
 Class to create and customize the Wiki
 '''
@@ -27,6 +29,15 @@ class Wiki:
     def createPage(self, title, text):
         titlemod = title + '.md'
         file = open(os.path.join(self.WIKIDIR, titlemod), 'w')
+        file.write(text)
+        file.close()
+    
+    '''
+    Append item to wiki page
+    '''
+    def appendPage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
         file.write(text)
         file.close()
     

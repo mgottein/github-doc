@@ -9,9 +9,8 @@ REPODIR = ''
 Instantiate and build the custom wiki
 '''
 def buildWiki():
-    wikidir = os.path.join(REPODIR,os.path.join(APPNAME,'.wiki'))
+    wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
-    wiki.create()
     wiki.setTag('title', 'TEST TITLE')
     wiki.setTag('subtitle', 'test subtitle')
     wiki.setTag('readme', getReadme())
@@ -20,6 +19,7 @@ def buildWiki():
     text = 'This is one line.\n\nThis is another. And another (jk {{ test }}).\nAnd another!'
     wiki.createPage("TEST_PAGE", text)
     wiki.setTag('test', 'UH')
+    wiki.appendPage('CONTRIBUTORS', '\nted')
 
 '''
 Return project readme file
