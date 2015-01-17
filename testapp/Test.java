@@ -1,14 +1,6 @@
-/**
- * @author Matthew Gotteiner <mgottein@purdue.edu>
- * @version 1.0
- * @since 2015-01-16
- */
 public class Test {
 
 
-  /**
-   * interface
-   */
   public interface Test1 {
     /**
      * @param str a string
@@ -38,9 +30,6 @@ public class Test {
     System.out.println("Hello World~");
   }
 
-  /**
-   * static class
-   */
   public static class Test2 {
     /**
      * some field
@@ -48,9 +37,6 @@ public class Test {
     private int field;
   }
 
-  /**
-   * inner class
-   */
   public class Test3 {
     /**
      * some method
