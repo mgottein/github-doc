@@ -37,6 +37,5 @@ def collateData(files):
     return javadocs
 
 if __name__ == '__main__':
-    javadocs = genJavadocGraph(REPODIR)
-    for link, javadoc in javadocs.iteritems():
+    for javadoc in getJavadocs(open(path.join(REPODIR, 'Test.java'), 'r')):
         print javadoc

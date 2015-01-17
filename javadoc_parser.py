@@ -319,7 +319,10 @@ class Context:
         return '.'.join([cls.getName() for cls in self.clsStack])
 
     def __repr__(self):
-        return "{}.{}".format(self.package, self.getClsName())
+        if self.package:
+            return "{}.{}".format(self.package, self.getClsName())
+        else:
+            return self.getClsName()
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
@@ -410,7 +413,7 @@ def getJavadocs(f):
             sourceLine = sourceLineM.group(0).strip()
             sourceBoundsStart = java.count(os.linesep, 0, sourceLineM.end())
             sourceBoundsEnd = sourceBoundsStart
-            if sourceLine[-1] == '{':
+            if bracketRe.search(sourceLine):
                 depth = 1
                 for bracketM in bracketRe.finditer(java, sourceLineM.end() + 1):
                     if java[bracketM.start() - 1] == '\\':
