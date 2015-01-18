@@ -3,13 +3,14 @@ import os
 
 class LinkParser:
     aRe = re.compile(r'\<a\s+href\=\".*\"\>.*\</a\>')
-    def parse(self, text):
+    def parse(self, context, text):
         if text[0] == '"':
             return StringLink(text)
         elif LinkParser.aRe.search(text):
             return HtmlLink(text)
         else:
-            return JavadocLink.parse(text)
+            return JavadocLink(context, text)
+
 '''
 String link to nowhere
 '''
@@ -59,94 +60,26 @@ class HtmlLink:
 Javadoc link to another javadoc
 '''
 class JavadocLink:
-    classRe = re.compile(r'^[^#\s]*')
-    fieldRe = re.compile(r'#[^\s\(]+')
-    methodRe = re.compile(r'#[^\s^\(]*\(.*\)')
-
-    @staticmethod
-    def parse(text):
-        link = JavadocLink()
-        link.cls = None
-        link.method = None
-        link.field = None
-        link.javadoc = None
-        classM = JavadocLink.classRe.search(text)
-        if classM:
-            link.cls = classM.group(0)
-        methodM = JavadocLink.methodRe.search(text)
-        if methodM:
-            link.method = methodM.group(0)[1:]
-        else:
-            fieldM = JavadocLink.fieldRe.search(text)
-            if fieldM:
-                link.field = fieldM.group(0)[1:]
-        return link
-
-    @staticmethod
-    def fromComment(comment):
-        link = JavadocLink()
-        link.cls = None
-        link.method = None
-        link.field = None
-        link.javadoc = None
-        context = comment.getContext()
-        package = context.getPackage()
-        clsName = context.getClsName()
-        sourceLine = comment.getSourceLine()
-        name = sourceLine.getName()
-        if package and clsName:
-            link.cls = "{}.{}".format(package, clsName)
-        elif package and isinstance(sourceLine, ClassLine):
-            link.cls = "{}.{}".format(package, name)
-        elif clsName:
-            link.cls = clsName
-        if isinstance(sourceLine, MethodLine):
-            link.method = name
-        elif isinstance(sourceLine, FieldLine):
-            link.field = name
-        elif isinstance(sourceLine, ClassLine):
-            if link.cls:
-                link.cls = "{}.{}".format(link.cls, name)
-            else:
-                link.cls = name
-        return link
-
-    def getCls(self):
-        return self.cls
-
-    def getMethod(self):
-        return self.method
-
-    def getField(self):
-        return self.field
-
-    def setJavadoc(self, javadoc):
-        self.javadoc = javadoc
-
-    def getJavadoc(self):
-        return self.javadoc
+    def __init__(self, context, text):
+        self.context = context
+        self.text = text
 
     def __repr__(self):
-        return "JavadocLink: {}#{}/{} Filled in? {}".format(self.cls, self.method, self.field, self.javadoc is not None)
-
-    def __hash__(self):
-        return hash(self.cls) * 3 + hash(self.method) * 5 + hash(self.field) * 7
-
-    def __eq__(self, other):
-        return self.cls == other.cls and self.method == other.method and self.field == other.field
+        return "JavadocLink: {}".format(self.text)
 
 '''
 Text in a javadoc that may have inline tags embedded in it
 '''
 class Text:
     inlineTagRe = re.compile(r'\{@[^\}]*}')
-    def __init__(self, text):
+    def __init__(self, context, text):
         #array looks like text -> tag -> text .....
         self.content = []
+        self.context = context
         start = 0
         for m in Text.inlineTagRe.finditer(text):
             self.content.append(text[start:m.start()])
-            self.content.append(InlineTag(m.group(0)))
+            self.content.append(InlineTag(context, m.group(0)))
             start = m.end()
         if start < len(text):
             self.content.append(text[start:])
@@ -162,8 +95,9 @@ Tag in a javadoc. Means something special
 class Tag:
     linkParser = LinkParser()
     whitespaceRe = re.compile(r'\s+')
-    def __init__(self, text):
+    def __init__(self, context, text):
         self.name = None
+        self.context = context
         self.text = None
         self.link = None
         self.parse(text)
@@ -187,27 +121,27 @@ class Tag:
 Block tag in a javadoc. Stands alone and has text associated with it that could have inline tags
 '''
 class BlockTag(Tag):
-    def __init__(self, text):
-        Tag.__init__(self, text)
+    def __init__(self,context, text):
+        Tag.__init__(self,context, text)
 
     def parse(self, text):
         m = Tag.whitespaceRe.search(text)
         self.name = text[1:m.start()]
-        self.text = Text(text[m.end():].strip())
+        self.text = Text(self.context, text[m.end():].strip())
 
 '''
 Inline tag in a javadoc. Inside free-form text and has text associated with it
 '''
 class InlineTag(Tag):
-    def __init__(self, text):
-        Tag.__init__(self, text)
+    def __init__(self,context,text):
+        Tag.__init__(self,context,text)
 
     def parse(self, text):
         m = Tag.whitespaceRe.search(text)
         self.name = text[2:m.start()]
         self.text = text[m.end():-1].strip()
         if self.name == 'link':
-            self.link = Tag.linkParser.parse(self.text)
+            self.link = Tag.linkParser.parse(self.context, self.text)
 
 class SourceLineFactory:
     def __init__(self):
@@ -340,11 +274,14 @@ class Context:
     def getFileName(self):
         return self.f
 
-    def __repr__(self):
+    def getFullName(self):
         if self.package:
             return "{}.{}".format(self.package, self.getClsName())
         else:
             return self.getClsName()
+
+    def __repr__(self):
+        return self.getFullName()
 
 '''
 A single javadoc comment. Can have a main description and tag section, or only one of them
@@ -383,7 +320,7 @@ class JavadocComment:
             if len(line) > 0:
                 if line[0] == '@':
                     if curBlockTagText:
-                        self.blockTags.append(BlockTag(curBlockTagText))
+                        self.blockTags.append(BlockTag(context, curBlockTagText))
                     curBlockTagText = line
                 else:
                     if curBlockTagText:
@@ -394,9 +331,9 @@ class JavadocComment:
                         else:
                             self.mainDesc = line
         if curBlockTagText:
-            self.blockTags.append(BlockTag(curBlockTagText))
+            self.blockTags.append(BlockTag(context, curBlockTagText))
         if self.mainDesc:
-            self.mainDesc = Text(self.mainDesc)
+            self.mainDesc = Text(context, self.mainDesc)
 
     def getContext(self):
         return self.context
@@ -445,7 +382,7 @@ def getClasses(java):
 def getClassStack(classList, sourceLine):
     classStack = []
     for cls in classList:
-        if cls.getBounds()[0] < sourceLine.getBounds()[0] and cls.getBounds()[1] > sourceLine.getBounds()[1]:
+        if cls.getBounds()[0] <= sourceLine.getBounds()[0] and cls.getBounds()[1] >= sourceLine.getBounds()[1]:
             classStack.append(cls)
     return classStack
 
@@ -478,9 +415,8 @@ def getFiles(root):
     return files
 
 class JavadocGraph:
-
     def __init__(self, root):
-        self.javadocs = {}
+        self.javadocs = []
         for f in getFiles(root):
             java = open(f, 'r').read()
             package = getPackage(java)
@@ -489,38 +425,50 @@ class JavadocGraph:
             for javadoc in getJavadocs(java, f, package, fileClassList):
                 if isinstance(javadoc.getSourceLine(), ClassLine):
                     addedClassList.add(javadoc.getSourceLine())
-                self.javadocs[JavadocLink.fromComment(javadoc)] = javadoc
+                self.javadocs.append(javadoc)
             for cls in getClasses(java):
                 if cls not in addedClassList:
                     dummyJavadoc = JavadocComment.createdummyclass(Context(f, package, getClassStack(fileClassList, cls)), cls)
-                    self.javadocs[JavadocLink.fromComment(dummyJavadoc)] = dummyJavadoc
-        for _, javadoc in self.javadocs.iteritems():
-            for edge in javadoc.getEdges():
-                if edge in self.javadocs:
-                    edge.setJavadoc(self.javadocs[edge])
+                    self.javadocs.append(dummyJavadoc)
 
     def getTopLevelClasses(self):
-        for link, javadoc in self.javadocs.iteritems():
+        for javadoc in self.javadocs:
             if isinstance(javadoc.getSourceLine(), ClassLine):
-                if len(javadoc.getContext().getClsStack()) == 0:
+                if len(javadoc.getContext().getClsStack()) == 1:
                     yield javadoc
 
     def getMethods(self, javadocClass):
-        for link, javadoc in self.javadocs.iteritems():
+        for javadoc in self.javadocs:
             if isinstance(javadoc.getSourceLine(), MethodLine):
-                if link.getCls() == JavadocLink.fromComment(javadocClass).getCls():
+                if javadocClass.getSourceLine().getBounds() == javadoc.getContext().getClsStack()[-1].getBounds():
                     yield javadoc
 
     def getFields(self, javadocClass):
-        for link, javadoc in self.javadocs.iteritems():
+        for javadoc in self.javadocs:
             if isinstance(javadoc.getSourceLine(), FieldLine):
-                if link.getCls() == JavadocLink.fromComment(javadocClass).getCls():
+                if javadocClass.getSourceLine().getBounds() == javadoc.getContext().getClsStack()[-1].getBounds():
                     yield javadoc
 
     def getInnerClasses(self, javadocClass):
-        for link, javadoc in self.javadocs.iteritems():
+        outerBounds = javadocClass.getSourceLine().getBounds()
+        for javadoc in self.javadocs:
             if isinstance(javadoc.getSourceLine(), ClassLine):
-                if javadoc.getContext().getClsName() == JavadocLink.fromComment(javadocClass).getCls():
+                innerBounds = javadoc.getSourceLine().getBounds()
+                if outerBounds[0] < innerBounds[0] and outerBounds[1] > innerBounds[1]:
                     yield javadoc
 
-    
+    classRe = re.compile(r'^[^#\s]*')
+    fieldRe = re.compile(r'#[^\s\(]+')
+    methodRe = re.compile(r'[^\s^\(]*\(.*\)')
+    def resolveLink(self, javadocLink):
+        linkText = javadocLink.text
+        linkComponents = javadocLink.text.split('#')
+        linkClass = None
+        if linkText[0] == '#':
+            linkClass = javadocLink.context.getClsStack()[-1]
+        else:
+            for javadoc in self.javadocs:
+                if isinstance(javadoc.getSourceLine(), ClassLine):
+                    if javadoc.getContext().getFullName().endswith(linkComponents[0]):
+                        linkClass = javadoc.getContext().getClsStack()[-1]
+        return linkClass

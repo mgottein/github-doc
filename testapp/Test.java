@@ -23,7 +23,7 @@ public class Test {
    * More description {@link TEST_LINK}
    *
    * @param args Arguments for the program
-   *     asdfasdf reareRRAREAREAR
+   *     asdfasdf {@link <a href="www.google.com">google</a>} reareRRAREAREAR {@link #test(String[], T)}
    * @param garbage this is garbabge {@link Object#equals(Object)} asdf {@link Object}
    */
   public static void main(String[] args) {

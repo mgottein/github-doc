@@ -7,11 +7,16 @@ def mapwiki():
     REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
     
     graph = JavadocGraph(REPODIR)
+APPNAME = 'testapp'
+REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
+
+if __name__ == "__main__":
     
+    graph = JavadocGraph(REPODIR)
+
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
-    wiki = Wiki(wikidir)
+    wiki = Wiki(graph, wikidir)
     def genClass(classNode, pre):
-        #print "{}{}".format(pre, classNode.getSourceLine().getName())
         wiki.buildClass(classNode)
         #wiki.addToHomePage(classNode, 0)
         for methodNode in graph.getMethods(classNode):
@@ -26,6 +31,3 @@ def mapwiki():
     
     for topLevelClass in graph.getTopLevelClasses():
         genClass(topLevelClass, '')
-
-if __name__ == "__main__":
-    mapwiki()

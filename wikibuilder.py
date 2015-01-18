@@ -17,8 +17,9 @@ class Wiki:
     '''
     Initialize wiki with working directory and call create
     '''
-    def __init__(self, wikidir):
+    def __init__(self, graph, wikidir):
         self.WIKIDIR = wikidir
+        self.graph = graph
         self.create()
         self.pageName = None
         self.text = None
@@ -209,10 +210,7 @@ class Wiki:
         elif isinstance(link, HtmlLink):
             return "[{}]({})".format(link.getLabel(), link.getHref())
         elif isinstance(link, JavadocLink):
-            if link.getJavadoc():
-                return "(Javadoc Link Evaluated)"
-            else:
-                return "(Javadoc Link Unevaluated)"
+            return "Javadoc Link {}".format(self.graph.resolveLink(link))
         else:
             return ""
     
