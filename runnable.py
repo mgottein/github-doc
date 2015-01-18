@@ -26,6 +26,6 @@ def mapwiki():
     
     for topLevelClass in graph.getTopLevelClasses():
         genClass(topLevelClass, '')
-
+        
 if __name__ == "__main__":
     mapwiki()
