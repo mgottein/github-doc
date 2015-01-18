@@ -65,43 +65,37 @@ class Wiki:
         file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
         file.write(text)
         file.close()
-    
+
     '''
     Add a class to the wiki
     ''' 
     def buildClass(self, javadoc):
-        self.pageName = javadoc.getSourceLine().getName() + '.md'
+        self.pageName = javadoc.getContext().getFullName() + '.md'
         self.text = ''
-        self.text += self.mName(javadoc.sourceLine.name, 2)
-        self.text += self.mLink(javadoc.getContext().getClsName())
-        self.text += self.mModifier(javadoc.sourceLine.modifiers)
-        self.text += self.mTags(javadoc.blockTags)
-        self.text += self.mSource(javadoc.sourceLine.sourceLine)
+        self.text += self.formatJavadoc(javadoc)
+        self.text += '\n'
+
+    def buildInnerClass(self, javadoc):
+        self.text += "###{}\n".format(javadoc.getSourceLine().getName())
+        self.text += "`{}`\n".format(javadoc.getSourceLine().getText())
+        self.text += '---\n'
+        self.text += self.formatJavadoc(javadoc)
 
     '''
     Add a method to the wiki
     '''
     def buildMethod(self, javadoc):
-        self.text += self.mName(javadoc.sourceLine.name, 3)
-        self.text += self.mLink(javadoc.getContext().getClsName())
-        self.text += self.mModifier(javadoc.sourceLine.modifiers)
-        try:
-            self.text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
-        except AttributeError:
-            pass
-        self.text += self.mTags(javadoc.blockTags, True)
-        self.text += self.mSource(javadoc.sourceLine.sourceLine)
+        self.text += "##{}\n".format(javadoc.getSourceLine().getName())
+        self.text += "```java\n{}\n```\n".format(javadoc.getSourceLine().getText())
+        self.text += self.formatJavadoc(javadoc)
 
     '''
     Add a field to the wiki
     '''
     def buildField(self, javadoc):
-        self.text += self.mName(javadoc.sourceLine.name, 3)
-        self.text += self.mLink(javadoc.getContext().getClsName())
-        self.text += self.mModifier(javadoc.sourceLine.modifiers)
-        self.text += self.mType(javadoc.sourceLine.type)
-        self.text += self.mTags(javadoc.blockTags, True)
-        self.text += self.mSource(javadoc.sourceLine.sourceLine)
+        self.text += "##{}\n".format(javadoc.getSourceLine().getName())
+        self.text += "`{}`\n".format(javadoc.getSourceLine().getText())
+        self.text += self.formatJavadoc(javadoc)
 
     '''
     Create home page heirarchy
@@ -130,72 +124,24 @@ class Wiki:
             return readme
         else:
             return None
-    
-    '''
-    Markdown source
-    '''
-    def mSource(self, source):
-        if source:
-            return '{}\n\n'.format(code('java', source[:-1]))
-        return ''
-    
-    '''
-    Markdown link
-    '''
-    def mLink(self, link):
-        if link:
-            links = link.split('.')
-            flinks = []
-            for link in links:
-                link = markup_formatter.link(link, link)
-                flinks.append(link)
-            flinks = '[{}]'.format('] ['.join(flinks))
-            return '**LINK** {}\n\n'.format(flinks)
-        return ''
-    
-    '''
-    Markdown modifier
-    '''
-    def mModifier(self, modifiers):
-        if modifiers:
-            return '**MODIFIER** {}\n\n'.format(', '.join(modifiers))
-        return ''
-        
-    '''
-    Markdown name
-    '''
-    def mName(self, name, weight):
-        if name:
-            return '{}\n\n'.format(hx(weight, name))
-        return ''
-        
-    '''
-    Markdown tags
-    '''
-    def mTags(self, tags, italic=False):
-        if tags:
-            return '{}\n\n'.format(self.formatTag(tags, italic))
-        return ''
-        
-    '''
-    Markdown type
-    '''
-    def mType(self, type):
-        if type:
-            return '**TYPE** {}\n\n'.format(italic(type))
-        return ''
-    
+
+    def formatJavadoc(self, javadoc):
+        text = ''
+        if javadoc:
+            if javadoc.getMainDesc():
+                text += "{}\n\n".format(self.formatMainDesc(javadoc.getMainDesc()))
+            if javadoc.getBlockTags():
+                text += self.formatTagSection(javadoc.getBlockTags())
+        return "{}\n".format(text)
+
     '''
     Format description
     '''
-    def formatDesc(self, content):
+    def formatMainDesc(self, mainDesc):
         text = ''
-        for item in content:
+        for item in mainDesc.getContent():
             if isinstance(item, InlineTag):
-                try:
-                    text += link(item.link.label, item.link.href)
-                except AttributeError:
-                    text += link(item.text, item.link.cls)
+                text += self.formatLink(item)
             else:
                 item = re.sub(r'(<p>)+', ' ', item)
                 text += str(item)
@@ -221,7 +167,7 @@ class Wiki:
     '''
     Format tags
     '''
-    def formatTag(self, blocktags, italic=False):
+    def formatTagSection(self, blocktags, italic=False):
         text = ""
         def formatTextContent(content):
             text = ""
@@ -234,13 +180,13 @@ class Wiki:
 
         authorTag = [blocktag for blocktag in blocktags if blocktag.getName() == "author"]
         if len(authorTag) > 0:
-            text += "###### Authored by {}\n".format(authorTag[0].getText())
+            text += "###### Authored by {}\n\n".format(authorTag[0].getText())
         versionTag = [blocktag for blocktag in blocktags if blocktag.getName() == "version"]
         if len(versionTag) > 0:
-            text += "Version {}\n".format(versionTag[0].getText())
+            text += "Version {}\n\n".format(versionTag[0].getText())
         paramTags = [blocktag for blocktag in blocktags if blocktag.getName() == "param"]
         if len(paramTags) > 0:
-            text += "**params**\n"
+            text += "**params**\n\n"
             for paramTag in paramTags:
                 content = paramTag.getText().getContent()
                 if len(content) > 0:
@@ -251,10 +197,10 @@ class Wiki:
         if len(returnTag) > 0:
             content = returnTag[0].getText().getContent()
             if len(content) > 0:
-                text += "**returns** {}\n".format(formatTextContent(content))
+                text += "**returns** {}\n\n".format(formatTextContent(content))
         throwsTags = [blocktag for blocktag in blocktags if blocktag.getName() == "throws"]
         if len(throwsTags) > 0:
-            text += "**throws**\n"
+            text += "**throws**\n\n"
             for throwsTag in throwsTags:
                 content = throwsTag.getText().getContent()
                 if len(content) > 0:
@@ -263,19 +209,19 @@ class Wiki:
                     text += "* `{}` {}{}\n".format(typ, ' '.join(first[1:]), formatTextContent(content[1:]))
         seeTags = [blocktag for blocktag in blocktags if blocktag.getName() == "see"]
         if len(seeTags) > 0:
-            text += "**see**\n"
+            text += "**see**\n\n"
             for seeTag in seeTags:
                 content = seeTag.getText().getContent()
                 if len(content) > 0:
                     text += "* {}\n".format(formatTextContent(content))
         sinceTag = [blocktag for blocktag in blocktags if blocktag.getName() == "since"]
         if len(sinceTag) > 0:
-            text += "**since** {}\n".format(sinceTag[0].getText())
+            text += "**since** {}\n\n".format(sinceTag[0].getText())
         deprecatedTag = [blocktag for blocktag in blocktags if blocktag.getName() == "deprecated"]
         if len(deprecatedTag) > 0:
             content = deprecatedTag.getText().getContent()
             if len(content) > 0:
-                text += "~~deprecated~~ {}\n".format(formatTextContent(content))
+                text += "~~deprecated~~ {}\n\n".format(formatTextContent(content))
         return text
     '''
     Modify a template tag to be a custom value

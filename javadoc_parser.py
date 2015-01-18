@@ -171,8 +171,14 @@ class SourceLineFactory:
     def parse(self, sourceLine, sourceBounds):
         if sourceLine:
             if self.classRe.search(sourceLine):
-                return ClassLine(self.f, sourceLine, sourceBounds)
+                searchM = re.search('\s+\{', sourceLine)
+                if searchM:
+                    sourceLine = sourceLine[:searchM.start()]
+                    return ClassLine(self.f, sourceLine, sourceBounds)
             elif self.methodRe.search(sourceLine):
+                searchM = re.search('\s+\{', sourceLine)
+                if searchM:
+                    sourceLine = sourceLine[:searchM.start()]
                 return MethodLine(self.f, sourceLine, sourceBounds)
             elif self.fieldRe.search(sourceLine):
                 return FieldLine(self.f, sourceLine, sourceBounds)
