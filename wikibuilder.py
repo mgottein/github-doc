@@ -157,7 +157,7 @@ class Wiki:
         elif isinstance(link, JavadocLink):
             clsName = self.graph.resolveLink(link)
             if clsName:
-                return "[{}]({})".format(link.text, "{}.md".format(clsName))
+                return "[{}]({})".format(clsName, clsName)
             else:
                 return link.text
         else:
