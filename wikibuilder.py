@@ -198,6 +198,19 @@ class Wiki:
                 item = re.sub(r'(<p>)+', ' ', item)
                 text += str(item)
         return text
+
+    '''
+    Format links
+    '''
+    def formatLink(self, link):
+        if isinstance(link, StringLink):
+            return "\"{}\"".format(link.getStr())
+        elif isinstance(link, HtmlLink):
+            return "({})[{}]".format(link.getLabel(), link.getHref())
+        elif isinstance(link, JavadocLink):
+            return "(Javadoc Link)"
+        else:
+            return ""
     
     '''
     Format tags
@@ -209,8 +222,8 @@ class Wiki:
             for something in content:
                 if isinstance(something, basestring):
                     text += something
-                else:
-                    text += "(Inline tag here)"
+                elif something.getLink():
+                    text += self.formatLink(something.getLink())
             return text
 
         authorTag = [blocktag for blocktag in blocktags if blocktag.getName() == "author"]
