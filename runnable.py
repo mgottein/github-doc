@@ -13,13 +13,14 @@ if __name__ == "__main__":
     def genClass(classNode, pre):
         #print "{}{}".format(pre, classNode.getSourceLine().getName())
         wiki.buildClass(classNode)
-        wiki.addToHomePage(classNode, 0)
+        #wiki.addToHomePage(classNode, 0)
         for methodNode in graph.getMethods(classNode):
-            wiki.buildMethod(methodNode, classNode)
+            wiki.buildMethod(methodNode)
             #print "{}\t{}".format(pre, methodNode.getSourceLine().getName())
         for fieldNode in graph.getFields(classNode):
-            wiki.buildField(fieldNode, classNode)
+            wiki.buildField(fieldNode)
             #print "{}\t{}".format(pre, fieldNode.getSourceLine().getName())
+        wiki.createPage()
         for innerClassNode in graph.getInnerClasses(classNode):
             genClass(innerClassNode, "{}\t".format(pre))
     

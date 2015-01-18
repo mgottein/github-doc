@@ -19,6 +19,8 @@ class Wiki:
     def __init__(self, wikidir):
         self.WIKIDIR = wikidir
         self.create()
+        self.pageName = None
+        self.text = None
     
     '''
     Copy template files to wiki directory
@@ -41,66 +43,54 @@ class Wiki:
         
         self.setTemplate('title', APPNAME)
         self.setTemplate('readme', self.getReadme())
-        self.createPage('_SIDEBAR', '[Home](Home) | [ReadMe](README) | About')
+        #self.createPage('_SIDEBAR', '[Home](Home) | [ReadMe](README) | About')
     
     '''
     Create a new wiki page
     '''
-    def createPage(self, title, text):
-        titlemod = title + '.md'
-        file = open(os.path.join(self.WIKIDIR, titlemod), 'w')
-        file.write(text)
+    def createPage(self):
+        file = open(os.path.join(self.WIKIDIR, self.pageName), 'w')
+        file.write(self.text)
         file.close()
-    
-    '''
-    Append item to wiki page
-    '''
-    def appendPage(self, cls, text):
-        titlemod = cls.getSourceLine().getName() + '.md'
-        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
-        file.write(text)
-        file.close()
+        self.pageName = None
+        self.text = None
     
     '''
     Add a class to the wiki
     ''' 
     def buildClass(self, javadoc):
-        text = ''
-        text += self.mName(javadoc.sourceLine.name, 2)
-        text += self.mLink(javadoc.getContext().getClsName())
-        text += self.mModifier(javadoc.sourceLine.modifiers)
-        text += self.mTags(javadoc.blockTags)
-        text += self.mSource(javadoc.sourceLine.sourceLine)
-        self.createPage(javadoc.sourceLine.name, text)
+        self.pageName = javadoc.getSourceLine().getName() + '.md'
+        self.text = ''
+        self.text += self.mName(javadoc.sourceLine.name, 2)
+        self.text += self.mLink(javadoc.getContext().getClsName())
+        self.text += self.mModifier(javadoc.sourceLine.modifiers)
+        self.text += self.mTags(javadoc.blockTags)
+        self.text += self.mSource(javadoc.sourceLine.sourceLine)
 
     '''
     Add a method to the wiki
     '''
-    def buildMethod(self, javadoc, currentClass):
-        text = ''
-        text += self.mName(javadoc.sourceLine.name, 3)
-        text += self.mLink(javadoc.getContext().getClsName())
-        text += self.mModifier(javadoc.sourceLine.modifiers)
+    def buildMethod(self, javadoc):
+        self.text += self.mName(javadoc.sourceLine.name, 3)
+        self.text += self.mLink(javadoc.getContext().getClsName())
+        self.text += self.mModifier(javadoc.sourceLine.modifiers)
         try:
-            text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
+            self.text += ('**DESCRIPTION** {}\n\n'.format(self.formatDesc(javadoc.mainDesc.content)))
         except AttributeError:
             pass
-        text += self.mTags(javadoc.blockTags, True)
-        text += self.mSource(javadoc.sourceLine.sourceLine)
-        self.appendPage(currentClass, text)
+        self.text += self.mTags(javadoc.blockTags, True)
+        self.text += self.mSource(javadoc.sourceLine.sourceLine)
 
     '''
     Add a field to the wiki
     '''
-    def buildField(self, javadoc, currentClass):
-        text = ''
-        text += self.mName(javadoc.sourceLine.name, 3)
-        text += self.mLink(javadoc.getContext().getClsName())
-        text += self.mModifier(javadoc.sourceLine.modifiers)
-        text += self.mType(javadoc.sourceLine.type)
-        text += self.mTags(javadoc.blockTags, True)
-        text += self.mSource(javadoc.sourceLine.sourceLine)
-        self.appendPage(currentClass, text)
+    def buildField(self, javadoc):
+        self.text += self.mName(javadoc.sourceLine.name, 3)
+        self.text += self.mLink(javadoc.getContext().getClsName())
+        self.text += self.mModifier(javadoc.sourceLine.modifiers)
+        self.text += self.mType(javadoc.sourceLine.type)
+        self.text += self.mTags(javadoc.blockTags, True)
+        self.text += self.mSource(javadoc.sourceLine.sourceLine)
 
     '''
     Create home page heirarchy
