@@ -2,19 +2,12 @@ from os import path
 from javadoc_parser import *
 from wikibuilder import *
 
-def mapwiki():
-    APPNAME = 'testapp'
-    REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
-    
-    graph = JavadocGraph(REPODIR)
-APPNAME = 'testapp'
-REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
-
 if __name__ == "__main__":
-    
-    graph = JavadocGraph(REPODIR)
 
-    wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
+    APPNAME = 'mhacks-demo'
+    REPODIR = os.path.expanduser('~/mhacks-demo')
+    wikidir = os.path.expanduser('~/mhacks-demo.wiki')
+    graph = JavadocGraph(REPODIR)
     wiki = Wiki(graph, wikidir)
     def genClass(classNode, pre):
         def sourceSort(a, b):

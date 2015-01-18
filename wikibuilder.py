@@ -34,17 +34,18 @@ class Wiki:
             os.makedirs(dest)        
         # Remove existing files
         for file in os.listdir(dest):
-            path = os.path.join(dest, file)
-            try:
-                if os.path.isfile(path):
-                    os.unlink(path)
-            except Exception, e:
-                print e
+            if file[0] != '.':
+                path = os.path.join(dest, file)
+                try:
+                    if os.path.isfile(path):
+                        os.unlink(path)
+                except Exception, e:
+                    print e
         # Copy template directory
         distutils.dir_util.copy_tree(src, dest)
         
-        self.setTemplate('title', self.APPNAME)
-        self.setTemplate('readme', self.getReadme())
+        #self.setTemplate('title', self.APPNAME)
+        #self.setTemplate('readme', self.getReadme())
         #self.createPage('_SIDEBAR', '> [Home](Home)\n\n\n')
     
     '''
@@ -225,6 +226,8 @@ class Wiki:
     '''
     Modify a template tag to be a custom value
     '''
+
+    '''
     def setTemplate(self, tag, text):
         if isinstance(text, list):
             text = '\n'.join(text)
@@ -234,3 +237,4 @@ class Wiki:
             for line in fileinput.FileInput(file, inplace=1):
                 line = line.replace(strbuild, text)
                 print line,
+    '''
