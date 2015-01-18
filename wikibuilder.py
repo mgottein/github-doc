@@ -41,7 +41,7 @@ class Wiki:
         
         self.setTemplate('title', APPNAME)
         self.setTemplate('readme', self.getReadme())
-        self.createPage('_SIDEBAR', '[Home](Home) | [ReadMe](README) | About')
+        self.createPage('_SIDEBAR', '> [Home](Home)\n\n\n')
     
     '''
     Create a new wiki page
@@ -62,11 +62,19 @@ class Wiki:
         file.close()
     
     '''
+    Append title item to wiki page
+    '''
+    def appendTitlePage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
+        file.write(text)
+        file.close()
+    
+    '''
     Add a class to the wiki
     ''' 
     def buildClass(self, javadoc):
         text = ''
-        text += self.mName(javadoc.sourceLine.name, 2)
         text += self.mLink(javadoc.getContext().getClsName())
         text += self.mModifier(javadoc.sourceLine.modifiers)
         text += self.mTags(javadoc.blockTags)
@@ -78,7 +86,6 @@ class Wiki:
     '''
     def buildMethod(self, javadoc, currentClass):
         text = ''
-        text += self.mName(javadoc.sourceLine.name, 3)
         text += self.mLink(javadoc.getContext().getClsName())
         text += self.mModifier(javadoc.sourceLine.modifiers)
         try:
@@ -94,7 +101,6 @@ class Wiki:
     '''
     def buildField(self, javadoc, currentClass):
         text = ''
-        text += self.mName(javadoc.sourceLine.name, 3)
         text += self.mLink(javadoc.getContext().getClsName())
         text += self.mModifier(javadoc.sourceLine.modifiers)
         text += self.mType(javadoc.sourceLine.type)
@@ -113,7 +119,9 @@ class Wiki:
             type = 'Method'
         else:
             type = 'Field'
-        text = '\n{}* {} ({})'.format(' ' * hierarchy, link(name, name), type)
+        text = '\n{}* {}'.format(' ' * hierarchy, link(name, name))
+        self.appendTitlePage('HOME', text)
+        self.appendTitlePage('_SIDEBAR', text)
     
     '''
     Return project readme file
