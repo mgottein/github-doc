@@ -234,41 +234,18 @@ class ClassLine(SourceLine):
         return "{} {} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name, self.sourceBounds)
 
 class MethodLine(SourceLine):
-    typeParamsRe = re.compile(r'\<.+\>')
-    signatureRe = re.compile(r'\w+\s+\w+\(.*\)')
-    argsRe = re.compile(r'\(.*\)')
-    nameRe = re.compile(r'\s+.+(?=\()')
-    retTypeRe = re.compile(r'[^\s]+\s')
+    nameRe = re.compile(r'(?!\s+)[^\s]+(?=\()')
+
     def __init__(self, f, sourceLine, sourceBounds):
         SourceLine.__init__(self, f, sourceLine, sourceBounds)
         self.typeParams = []
         self.name = ''
-        self.args = []
-        self.retType = ''
-        typeParamsM = MethodLine.typeParamsRe.search(sourceLine)
-        if typeParamsM:
-            self.typeParams = [typeParam.strip() for typeParam in typeParamsM.group(0).strip()[1:-1].split(',')]
-        signatureM = MethodLine.signatureRe.search(sourceLine)
-        if signatureM:
-            signature = signatureM.group(0).strip()
-            argsM = MethodLine.argsRe.search(signature)
-            nameM = MethodLine.nameRe.search(signature)
-            retTypeM = MethodLine.retTypeRe.search(signature)
-            if argsM:
-                self.args = [arg.strip() for arg in argsM.group(0).strip()[1:-1].split(',')]
-            if nameM:
-                self.name = nameM.group(0).strip()
-            if retTypeM:
-                self.retType = retTypeM.group(0).strip()
-
-    def getSignature(self):
-        return "{}({})".format(self.name, ', '.join([re.split('\s+', arg)[0] for arg in self.args]))
-
-    def getDisplay(self):
-        return "{} {}".format(self.retType, self.getSignature())
+        nameM = MethodLine.nameRe.search(sourceLine)
+        if nameM:
+            self.name = nameM.group(0)
 
     def __repr__(self):
-        return "Method: {} <{}> {} {}({})".format(' '.join(self.modifiers), ', '.join(self.typeParams), self.retType, self.name, ', '.join(self.args))
+        return "Method: {}".format(self.name)
 
 class FieldLine(SourceLine):
     def __init__(self, f, sourceLine, sourceBounds):
