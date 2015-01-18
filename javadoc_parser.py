@@ -144,7 +144,8 @@ class InlineTag(Tag):
             self.link = Tag.linkParser.parse(self.context, self.text)
 
 class SourceLineFactory:
-    def __init__(self):
+    def __init__(self, f):
+        self.f = f
         self.classRe = re.compile(r'(class|interface)\s+[^\s]+\s+{')
         self.methodRe = re.compile(r'\([^\)]*\)\s*[\{;]')
         self.fieldRe = re.compile(r';')
@@ -170,17 +171,18 @@ class SourceLineFactory:
     def parse(self, sourceLine, sourceBounds):
         if sourceLine:
             if self.classRe.search(sourceLine):
-                return ClassLine(sourceLine, sourceBounds)
+                return ClassLine(self.f, sourceLine, sourceBounds)
             elif self.methodRe.search(sourceLine):
-                return MethodLine(sourceLine, sourceBounds)
+                return MethodLine(self.f, sourceLine, sourceBounds)
             elif self.fieldRe.search(sourceLine):
-                return FieldLine(sourceLine, sourceBounds)
+                return FieldLine(self.f, sourceLine, sourceBounds)
         else:
             return None
 
 class SourceLine:
     modifiersRe = re.compile(r'(abstract|final|native|protected|public|private|static|strict|synchronized|transient|volatile)')
-    def __init__(self, sourceLine, sourceBounds):
+    def __init__(self, f, sourceLine, sourceBounds):
+       self.f = f
        self.sourceLine = sourceLine
        self.sourceBounds = sourceBounds
        self.modifiers = SourceLine.modifiersRe.findall(sourceLine)
@@ -197,12 +199,18 @@ class SourceLine:
     def getModifiers(self):
         return self.modifiers
 
+    def getFileName(self):
+        return self.f
+
 class ClassLine(SourceLine):
-    def __init__(self, sourceLine, sourceBounds):
-        SourceLine.__init__(self, sourceLine, sourceBounds)
+    def __init__(self, f, sourceLine, sourceBounds):
+        SourceLine.__init__(self, f, sourceLine, sourceBounds)
         components = sourceLine.split()
         self.isInterface = "interface" in sourceLine
         self.name = components[len(self.modifiers) + 1]
+
+    def getSourceLine(self):
+        return self
 
     def getName(self):
         return self.name
@@ -216,8 +224,8 @@ class MethodLine(SourceLine):
     argsRe = re.compile(r'\(.*\)')
     nameRe = re.compile(r'\s+.+(?=\()')
     retTypeRe = re.compile(r'[^\s]+\s')
-    def __init__(self, sourceLine, sourceBounds):
-        SourceLine.__init__(self, sourceLine, sourceBounds)
+    def __init__(self, f, sourceLine, sourceBounds):
+        SourceLine.__init__(self, f, sourceLine, sourceBounds)
         self.typeParams = []
         self.name = None
         self.args = []
@@ -238,12 +246,15 @@ class MethodLine(SourceLine):
             if retTypeM:
                 self.retType = retTypeM.group(0).strip()
 
+    def getSignature(self):
+        return "{}({})".format(self.name, ', '.join([re.split('\s+', arg)[0] for arg in self.args]))
+
     def __repr__(self):
         return "Method: {} <{}> {} {}({})".format(' '.join(self.modifiers), ', '.join(self.typeParams), self.retType, self.name, ', '.join(self.args))
 
 class FieldLine(SourceLine):
-    def __init__(self, sourceLine, sourceBounds):
-        SourceLine.__init__(self, sourceLine, sourceBounds)
+    def __init__(self, f, sourceLine, sourceBounds):
+        SourceLine.__init__(self, f, sourceLine, sourceBounds)
         components = sourceLine.split()
         self.name = components[len(self.modifiers) + 1]
         self.type = components[len(self.modifiers)]
@@ -338,6 +349,12 @@ class JavadocComment:
     def getContext(self):
         return self.context
 
+    def getFileName(self):
+        return self.context.getFileName()
+
+    def getClassName(self):
+        return self.context.getClsStack()[-1]
+
     def getMainDesc(self):
         return self.mainDesc
 
@@ -349,6 +366,9 @@ class JavadocComment:
 
     def getSourceLine(self):
         return self.sourceLine
+
+    def getName(self):
+        return self.sourceLine.getName()
 
     def getEdges(self):
         if self.mainDesc:
@@ -371,9 +391,9 @@ javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
 sourceLineRe = re.compile(r'[^;\{]*[;\{]', re.DOTALL)
 bracketRe = re.compile(r'[\{\}]')
-sourceLineFactory = SourceLineFactory()
 
-def getClasses(java):
+def getClasses(f, java):
+    sourceLineFactory = SourceLineFactory(f)
     classList = []
     for sourceLineM in sourceLineFactory.classRe.finditer(java):
         classList.append(sourceLineFactory.create(java, sourceLineM))
@@ -393,6 +413,7 @@ def getPackage(java):
         package = packageM.group(0).split()[-1][:-1]
 
 def getJavadocs(java, f, package, classList):
+    sourceLineFactory = SourceLineFactory(f)
     for javadocTextM in javadocRe.finditer(java):
         javadocText = javadocTextM.group(0)
         startLine = java.count('\n', 0, javadocTextM.start())
@@ -420,13 +441,13 @@ class JavadocGraph:
         for f in getFiles(root):
             java = open(f, 'r').read()
             package = getPackage(java)
-            fileClassList = getClasses(java)
+            fileClassList = getClasses(f, java)
             addedClassList = []
             for javadoc in getJavadocs(java, f, package, fileClassList):
                 if isinstance(javadoc.getSourceLine(), ClassLine):
-                    addedClassList.add(javadoc.getSourceLine())
+                    addedClassList.append(javadoc.getSourceLine())
                 self.javadocs.append(javadoc)
-            for cls in getClasses(java):
+            for cls in getClasses(f, java):
                 if cls not in addedClassList:
                     dummyJavadoc = JavadocComment.createdummyclass(Context(f, package, getClassStack(fileClassList, cls)), cls)
                     self.javadocs.append(dummyJavadoc)
@@ -446,7 +467,7 @@ class JavadocGraph:
     def getFields(self, javadocClass):
         for javadoc in self.javadocs:
             if isinstance(javadoc.getSourceLine(), FieldLine):
-                if javadocClass.getSourceLine().getBounds() == javadoc.getContext().getClsStack()[-1].getBounds():
+                if javadocClass.getSourceLine().getBounds()  == javadoc.getContext().getClsStack()[-1].getBounds():
                     yield javadoc
 
     def getInnerClasses(self, javadocClass):
@@ -457,18 +478,24 @@ class JavadocGraph:
                 if outerBounds[0] < innerBounds[0] and outerBounds[1] > innerBounds[1]:
                     yield javadoc
 
-    classRe = re.compile(r'^[^#\s]*')
-    fieldRe = re.compile(r'#[^\s\(]+')
-    methodRe = re.compile(r'[^\s^\(]*\(.*\)')
     def resolveLink(self, javadocLink):
         linkText = javadocLink.text
         linkComponents = javadocLink.text.split('#')
         linkClass = None
         if linkText[0] == '#':
-            linkClass = javadocLink.context.getClsStack()[-1]
+            linkClass = javadocLink.context.getFullName()
         else:
             for javadoc in self.javadocs:
                 if isinstance(javadoc.getSourceLine(), ClassLine):
                     if javadoc.getContext().getFullName().endswith(linkComponents[0]):
-                        linkClass = javadoc.getContext().getClsStack()[-1]
+                        linkClass = javadoc.getContext().getFullName()
+        '''
+        if linkClass and len(linkComponents) > 1:
+            for javadoc in self.getMethods(linkClass):
+                if re.sub('\s+', '', javadoc.getSourceLine().getSignature()) == re.sub('\s+', '', linkComponents[1]):
+                    return javadoc
+            for javadoc in self.getFields(linkClass):
+                if javadoc.getSourceLine().getName() == linkComponents[1].strip():
+                    return javadoc
+        '''
         return linkClass

@@ -1,6 +1,15 @@
+/**
+ * @author Matthew
+ * @version 1.0
+ * @since 2.0
+ */
 public class Test {
 
 
+  /**
+   * an interface
+   * @author Matthew
+   */
   public interface Test1 {
     /**
      * @param str a string
@@ -54,15 +63,25 @@ public class Test {
    * @param otherParam another parameter
    * @return an integer
    */
-  public static <T extends Runnable, V super BufferedInputStream> int test(String[] something, T otherParam) {
+  public static <T extends Runnable, V super BufferedInputStream> V test(String[] something, T otherParam) {
+
+  }
+
+  /**
+   * more testing
+   *
+   * @throws RuntimeException if it feels like it
+   * @throws IllegalStateException when on the state
+   */
+  public static int test(int i) {
 
   }
 
   /**
    * A second test method
    *
-   * @param nothing {@link Object#hashCode()} nothing {@link java.lang.Runnable#run()} in {@link class#method(int, long)} particular {@link #field}
-   * @return TEST
+   * @param nothing {@link Object#hashCode()} nothing {@link java.lang.Runnable#run()} in {@link #test(String[], T)} particular {@link #field}
+   * @return TEST {@link #test(int)}
    */
   int test2(String nothing) {
 

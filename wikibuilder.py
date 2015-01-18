@@ -210,7 +210,11 @@ class Wiki:
         elif isinstance(link, HtmlLink):
             return "[{}]({})".format(link.getLabel(), link.getHref())
         elif isinstance(link, JavadocLink):
-            return "Javadoc Link {}".format(self.graph.resolveLink(link))
+            clsName = self.graph.resolveLink(link)
+            if clsName:
+                return "[{}]({})".format(link.text, "{}.md".format(clsName))
+            else:
+                return link.text
         else:
             return ""
     
