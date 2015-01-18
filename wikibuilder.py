@@ -43,7 +43,7 @@ class Wiki:
         
         self.setTemplate('title', APPNAME)
         self.setTemplate('readme', self.getReadme())
-        #self.createPage('_SIDEBAR', '[Home](Home) | [ReadMe](README) | About')
+        #self.createPage('_SIDEBAR', '> [Home](Home)\n\n\n')
     
     '''
     Create a new wiki page
@@ -54,6 +54,15 @@ class Wiki:
         file.close()
         self.pageName = None
         self.text = None
+    
+    '''
+    Append title item to wiki page
+    '''
+    def appendTitlePage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
+        file.write(text)
+        file.close()
     
     '''
     Add a class to the wiki
@@ -103,7 +112,9 @@ class Wiki:
             type = 'Method'
         else:
             type = 'Field'
-        text = '\n{}* {} ({})'.format(' ' * hierarchy, link(name, name), type)
+        text = '\n{}* {}'.format(' ' * hierarchy, link(name, name))
+        self.appendTitlePage('HOME', text)
+        self.appendTitlePage('_SIDEBAR', text)
     
     '''
     Return project readme file
