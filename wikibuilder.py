@@ -2,9 +2,11 @@ import os
 import fileinput
 import distutils.core
 
+from runnable import APPNAME, REPODIR
 from markup_formatter import *
 from javadoc_parser import *
 import markup_formatter
+from xml.dom import HierarchyRequestErr
 
 '''
 Class to create and customize the Wiki
@@ -21,7 +23,7 @@ class Wiki:
     '''
     Copy template files to wiki directory
     '''
-    def create(self):
+    def create(self):      
         src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
         dest = self.WIKIDIR
         if not os.path.exists(dest):
@@ -36,6 +38,10 @@ class Wiki:
                 print e
         # Copy template directory
         distutils.dir_util.copy_tree(src, dest)
+        
+        self.setTemplate('title', APPNAME)
+        self.setTemplate('readme', self.getReadme())
+        self.createPage('_SIDEBAR', '[Home](Home) | [ReadMe](README) | About')
     
     '''
     Create a new wiki page
@@ -66,7 +72,7 @@ class Wiki:
         text += self.mTags(javadoc.blockTags)
         text += self.mSource(javadoc.sourceLine.sourceLine)
         self.createPage(javadoc.sourceLine.name, text)
-    
+
     '''
     Add a method to the wiki
     '''
@@ -82,7 +88,7 @@ class Wiki:
         text += self.mTags(javadoc.blockTags, True)
         text += self.mSource(javadoc.sourceLine.sourceLine)
         self.appendPage(currentClass, text)
-    
+
     '''
     Add a field to the wiki
     '''
@@ -95,6 +101,32 @@ class Wiki:
         text += self.mTags(javadoc.blockTags, True)
         text += self.mSource(javadoc.sourceLine.sourceLine)
         self.appendPage(currentClass, text)
+
+    '''
+    Create home page heirarchy
+    '''
+    def addToHomePage(self, javadoc, hierarchy):
+        name = javadoc.sourceLine.name
+        if hierarchy == 0:
+            type = 'Class'
+        elif hierarchy == 1:
+            type = 'Method'
+        else:
+            type = 'Field'
+        text = '\n{}* {} ({})'.format(' ' * hierarchy, link(name, name), type)
+    
+    '''
+    Return project readme file
+    '''
+    def getReadme(self):
+        path = os.path.join(REPODIR, 'README.md')
+        if os.path.isfile(path):
+            readmeFile = open(path, 'r')
+            readme = readmeFile.read()
+            readmeFile.close()
+            return readme
+        else:
+            return None
     
     '''
     Markdown source

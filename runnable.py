@@ -5,35 +5,15 @@ from wikibuilder import *
 APPNAME = 'testapp'
 REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
 
-'''
-Return project readme file
-'''
-def getReadme():
-    readmeFile = open(path.join(REPODIR, 'README.md'), 'r')
-    readme = readmeFile.read()
-    readmeFile.close()
-    return readme
-
-'''
-Parse project javadocs and read data
-'''
-def collateData(files):
-    for file in files:
-        javadocs = []
-        for javadoc in getJavadocs(open(file, 'r')):
-            javadocs.append(javadoc)
-            print javadoc
-    return javadocs
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     graph = JavadocGraph(REPODIR)
     
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
-    
     def genClass(classNode, pre):
         #print "{}{}".format(pre, classNode.getSourceLine().getName())
         wiki.buildClass(classNode)
+        wiki.addToHomePage(classNode, 0)
         for methodNode in graph.getMethods(classNode):
             wiki.buildMethod(methodNode, classNode)
             #print "{}\t{}".format(pre, methodNode.getSourceLine().getName())
