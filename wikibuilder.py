@@ -17,13 +17,49 @@ class Wiki:
     def __init__(self, wikidir):
         self.WIKIDIR = wikidir
         self.create()
-        
+    
     '''
-    Use the java docs to implement the wiki pages
-    '''    
+    Copy template files to wiki directory
+    '''
+    def create(self):
+        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
+        dest = self.WIKIDIR
+        if not os.path.exists(dest):
+            os.makedirs(dest)        
+        # Remove existing files
+        for file in os.listdir(dest):
+            path = os.path.join(dest, file)
+            try:
+                if os.path.isfile(path):
+                    os.unlink(path)
+            except Exception, e:
+                print e
+        # Copy template directory
+        distutils.dir_util.copy_tree(src, dest)
+    
+    '''
+    Create a new wiki page
+    '''
+    def createPage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'w')
+        file.write(text)
+        file.close()
+    
+    '''
+    Append item to wiki page
+    '''
+    def appendPage(self, title, text):
+        titlemod = title + '.md'
+        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
+        file.write(text)
+        file.close()
+    
+    '''
+    Add a class to the wiki
+    ''' 
     def buildClass(self, javadoc):
         text = ''
-        currentClass = javadoc.sourceLine.name
         text += self.mName(javadoc.sourceLine.name, 2)
         text += self.mLink(javadoc.getContext().getClsName())
         text += self.mModifier(javadoc.sourceLine.modifiers)
@@ -31,6 +67,9 @@ class Wiki:
         text += self.mSource(javadoc.sourceLine.sourceLine)
         self.createPage(javadoc.sourceLine.name, text)
     
+    '''
+    Add a method to the wiki
+    '''
     def buildMethod(self, javadoc, currentClass):
         text = ''
         text += self.mName(javadoc.sourceLine.name, 3)
@@ -47,6 +86,9 @@ class Wiki:
         else:
             self.appendPage(javadoc.sourceLine.name, text)
     
+    '''
+    Add a field to the wiki
+    '''
     def buildField(self, javadoc, currentClass):
         text = ''
         text += self.mName(javadoc.sourceLine.name, 3)
@@ -95,7 +137,7 @@ class Wiki:
     '''
     def mName(self, name, weight):
         if name:
-            return '{}\n'.format(hx(weight, name))
+            return '{}\n\n'.format(hx(weight, name))
         return ''
         
     '''
@@ -126,7 +168,7 @@ class Wiki:
                 except AttributeError:
                     text += link(item.text, item.link.cls)
             else:
-                item = re.sub(r'(<p>)+', '\n', item)
+                item = re.sub(r'(<p>)+', ' ', item)
                 text += str(item)
         return text
     
@@ -183,43 +225,6 @@ class Wiki:
             if len(content) > 0:
                 text += "~~deprecated~~ {}\n".format(formatTextContent(content))
         return text
-    '''
-    Copy template files to wiki directory
-    '''
-    def create(self):
-        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
-        dest = self.WIKIDIR
-        if not os.path.exists(dest):
-            os.makedirs(dest)        
-        # Remove existing files
-        for file in os.listdir(dest):
-            path = os.path.join(dest, file)
-            try:
-                if os.path.isfile(path):
-                    os.unlink(path)
-            except Exception, e:
-                print e
-        # Copy template directory
-        distutils.dir_util.copy_tree(src, dest)
-    
-    '''
-    Create a new wiki page
-    '''
-    def createPage(self, title, text):
-        titlemod = title + '.md'
-        file = open(os.path.join(self.WIKIDIR, titlemod), 'w')
-        file.write(text)
-        file.close()
-    
-    '''
-    Append item to wiki page
-    '''
-    def appendPage(self, title, text):
-        titlemod = title + '.md'
-        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
-        file.write(text)
-        file.close()
-    
     '''
     Modify a template tag to be a custom value
     '''
