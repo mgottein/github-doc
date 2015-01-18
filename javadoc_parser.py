@@ -211,6 +211,9 @@ class SourceLine:
     def getFileName(self):
         return self.f
 
+    def __eq__(self, other):
+        return self.sourceBounds == other.sourceBounds and self.f == other.f
+
 class ClassLine(SourceLine):
     def __init__(self, f, sourceLine, sourceBounds):
         SourceLine.__init__(self, f, sourceLine, sourceBounds)
@@ -225,7 +228,7 @@ class ClassLine(SourceLine):
         return self.name
 
     def getDisplay(self):
-        return "{} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name)
+        return "{} {}".format("interface" if self.isInterface else "class", self.name)
 
     def __repr__(self):
         return "{} {} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name, self.sourceBounds)
@@ -388,6 +391,9 @@ class JavadocComment:
     def getName(self):
         return self.sourceLine.getName()
 
+    def getModifiers(self):
+        return self.sourceLine.getModifiers()
+
     def getEdges(self):
         if self.mainDesc:
             for content in self.mainDesc.getContent():
@@ -403,7 +409,7 @@ class JavadocComment:
 
     def __repr__(self):
         #return "JavaDocComment: LineBounds? {} SourceLine? {} MainDesc? {} BlockTags? {}".format(self.lineBounds, self.sourceLine, self.mainDesc, self.blockTags)
-        return "JavaDocComment: Context? {} SourceLine? {} Edges? {} Javadoc Link? {}".format(self.context, self.sourceLine, list(self.getEdges()), JavadocLink.fromComment(self))
+        return "JavaDocComment: Context? {} SourceLine? {}".format(self.context, self.sourceLine)
 
 javadocRe = re.compile(r'/\*\*.*?\*/', re.DOTALL)
 packageRe = re.compile(r'package\s+.*;')
@@ -469,6 +475,7 @@ class JavadocGraph:
                 if cls not in addedClassList:
                     dummyJavadoc = JavadocComment.createdummyclass(Context(f, package, getClassStack(fileClassList, cls)), cls)
                     self.javadocs.append(dummyJavadoc)
+                    addedClassList.append(cls)
 
     def getTopLevelClasses(self):
         for javadoc in self.javadocs:
@@ -477,24 +484,29 @@ class JavadocGraph:
                     yield javadoc
 
     def getMethods(self, javadocClass):
+        outerBounds = javadocClass.getSourceLine().getBounds()
+        fileName = javadocClass.getSourceLine().getFileName()
         for javadoc in self.javadocs:
-            if isinstance(javadoc.getSourceLine(), MethodLine):
-                if javadocClass.getSourceLine().getBounds() == javadoc.getContext().getClsStack()[-1].getBounds():
+            if javadoc.getSourceLine().getFileName() == fileName and isinstance(javadoc.getSourceLine(), MethodLine):
+                if outerBounds == javadoc.getContext().getClsStack()[-1].getBounds():
                     yield javadoc
 
     def getFields(self, javadocClass):
+        outerBounds = javadocClass.getSourceLine().getBounds()
+        fileName = javadocClass.getSourceLine().getFileName()
         for javadoc in self.javadocs:
-            if isinstance(javadoc.getSourceLine(), FieldLine):
-                if javadocClass.getSourceLine().getBounds()  == javadoc.getContext().getClsStack()[-1].getBounds():
+            if javadoc.getSourceLine().getFileName() == fileName and isinstance(javadoc.getSourceLine(), FieldLine):
+                if outerBounds  == javadoc.getContext().getClsStack()[-1].getBounds():
                     yield javadoc
 
     def getInnerClasses(self, javadocClass):
         outerBounds = javadocClass.getSourceLine().getBounds()
+        fileName = javadocClass.getSourceLine().getFileName()
         for javadoc in self.javadocs:
-            if isinstance(javadoc.getSourceLine(), ClassLine):
-                innerBounds = javadoc.getSourceLine().getBounds()
-                if outerBounds[0] < innerBounds[0] and outerBounds[1] > innerBounds[1]:
-                    yield javadoc
+            if javadoc.getSourceLine().getFileName() == fileName and isinstance(javadoc.getSourceLine(), ClassLine):
+                    innerBounds = javadoc.getSourceLine().getBounds()
+                    if outerBounds[0] < innerBounds[0] and outerBounds[1] > innerBounds[1]:
+                        yield javadoc
 
     def resolveLink(self, javadocLink):
         linkText = javadocLink.text
@@ -507,13 +519,4 @@ class JavadocGraph:
                 if isinstance(javadoc.getSourceLine(), ClassLine):
                     if javadoc.getContext().getFullName().endswith(linkComponents[0]):
                         linkClass = javadoc.getContext().getFullName()
-        '''
-        if linkClass and len(linkComponents) > 1:
-            for javadoc in self.getMethods(linkClass):
-                if re.sub('\s+', '', javadoc.getSourceLine().getSignature()) == re.sub('\s+', '', linkComponents[1]):
-                    return javadoc
-            for javadoc in self.getFields(linkClass):
-                if javadoc.getSourceLine().getName() == linkComponents[1].strip():
-                    return javadoc
-        '''
         return linkClass

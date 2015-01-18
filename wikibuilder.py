@@ -182,7 +182,7 @@ class Wiki:
             text += "###### Authored by {}\n\n".format(self.formatText(authorTag[0].getText()))
         versionTag = [blocktag for blocktag in blocktags if blocktag.getName() == "version"]
         if len(versionTag) > 0:
-            text += "Version {}\n\n".format(versionTag[0].getText())
+            text += "Version {}\n\n".format(self.formatText(versionTag[0].getText()))
         paramTags = [blocktag for blocktag in blocktags if blocktag.getName() == "param"]
         if len(paramTags) > 0:
             text += "**params**\n\n"
@@ -215,7 +215,7 @@ class Wiki:
                     text += "* {}\n".format(formatTextContent(content))
         sinceTag = [blocktag for blocktag in blocktags if blocktag.getName() == "since"]
         if len(sinceTag) > 0:
-            text += "\n**since** {}\n\n".format(sinceTag[0].getText())
+            text += "\n**since** {}\n\n".format(self.formatText(sinceTag[0].getText()))
         deprecatedTag = [blocktag for blocktag in blocktags if blocktag.getName() == "deprecated"]
         if len(deprecatedTag) > 0:
             content = deprecatedTag.getText().getContent()
