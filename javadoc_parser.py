@@ -174,13 +174,16 @@ class SourceLineFactory:
                 searchM = re.search('\s+\{', sourceLine)
                 if searchM:
                     sourceLine = sourceLine[:searchM.start()]
-                    return ClassLine(self.f, sourceLine, sourceBounds)
+                return ClassLine(self.f, sourceLine, sourceBounds)
             elif self.methodRe.search(sourceLine):
-                searchM = re.search('\s+\{', sourceLine)
+                searchM = re.search('\s*[\{;]', sourceLine)
                 if searchM:
                     sourceLine = sourceLine[:searchM.start()]
                 return MethodLine(self.f, sourceLine, sourceBounds)
             elif self.fieldRe.search(sourceLine):
+                searchM = re.search('\s*[;|\=]', sourceLine)
+                if searchM:
+                    sourceLine = sourceLine[:searchM.start()]
                 return FieldLine(self.f, sourceLine, sourceBounds)
         else:
             return None
@@ -221,6 +224,9 @@ class ClassLine(SourceLine):
     def getName(self):
         return self.name
 
+    def getDisplay(self):
+        return "{} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name)
+
     def __repr__(self):
         return "{} {} {} {}".format(' '.join(self.modifiers), "interface" if self.isInterface else "class", self.name, self.sourceBounds)
 
@@ -233,9 +239,9 @@ class MethodLine(SourceLine):
     def __init__(self, f, sourceLine, sourceBounds):
         SourceLine.__init__(self, f, sourceLine, sourceBounds)
         self.typeParams = []
-        self.name = None
+        self.name = ''
         self.args = []
-        self.retType = None
+        self.retType = ''
         typeParamsM = MethodLine.typeParamsRe.search(sourceLine)
         if typeParamsM:
             self.typeParams = [typeParam.strip() for typeParam in typeParamsM.group(0).strip()[1:-1].split(',')]
@@ -255,6 +261,9 @@ class MethodLine(SourceLine):
     def getSignature(self):
         return "{}({})".format(self.name, ', '.join([re.split('\s+', arg)[0] for arg in self.args]))
 
+    def getDisplay(self):
+        return "{} {}".format(self.retType, self.getSignature())
+
     def __repr__(self):
         return "Method: {} <{}> {} {}({})".format(' '.join(self.modifiers), ', '.join(self.typeParams), self.retType, self.name, ', '.join(self.args))
 
@@ -264,6 +273,9 @@ class FieldLine(SourceLine):
         components = sourceLine.split()
         self.name = components[len(self.modifiers) + 1]
         self.type = components[len(self.modifiers)]
+
+    def getDisplay(self):
+        return "{} {}".format(self.type, self.name)
 
     def __repr__(self):
         return "Field: {} {} {}".format(' '.join(self.modifiers), self.type, self.name)

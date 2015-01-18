@@ -76,9 +76,8 @@ class Wiki:
         self.text += '\n'
 
     def buildInnerClass(self, javadoc):
-        self.text += "###{}\n".format(javadoc.getSourceLine().getName())
-        self.text += "`{}`\n".format(javadoc.getSourceLine().getText())
         self.text += '---\n'
+        self.text += "#{}\n".format(javadoc.getSourceLine().getDisplay())
         self.text += self.formatJavadoc(javadoc)
 
     '''
@@ -94,7 +93,7 @@ class Wiki:
     '''
     def buildField(self, javadoc):
         self.text += "##{}\n".format(javadoc.getSourceLine().getName())
-        self.text += "`{}`\n".format(javadoc.getSourceLine().getText())
+        self.text += "```java\n{}\n```\n".format(javadoc.getSourceLine().getText())
         self.text += self.formatJavadoc(javadoc)
 
     '''
@@ -129,7 +128,7 @@ class Wiki:
         text = ''
         if javadoc:
             if javadoc.getMainDesc():
-                text += "{}\n\n".format(self.formatMainDesc(javadoc.getMainDesc()))
+                text += "{}\n\n".format(self.formatText(javadoc.getMainDesc()))
             if javadoc.getBlockTags():
                 text += self.formatTagSection(javadoc.getBlockTags())
         return "{}\n".format(text)
@@ -137,7 +136,7 @@ class Wiki:
     '''
     Format description
     '''
-    def formatMainDesc(self, mainDesc):
+    def formatText(self, mainDesc):
         text = ''
         for item in mainDesc.getContent():
             if isinstance(item, InlineTag):
@@ -180,7 +179,7 @@ class Wiki:
 
         authorTag = [blocktag for blocktag in blocktags if blocktag.getName() == "author"]
         if len(authorTag) > 0:
-            text += "###### Authored by {}\n\n".format(authorTag[0].getText())
+            text += "###### Authored by {}\n\n".format(self.formatText(authorTag[0].getText()))
         versionTag = [blocktag for blocktag in blocktags if blocktag.getName() == "version"]
         if len(versionTag) > 0:
             text += "Version {}\n\n".format(versionTag[0].getText())
@@ -197,7 +196,7 @@ class Wiki:
         if len(returnTag) > 0:
             content = returnTag[0].getText().getContent()
             if len(content) > 0:
-                text += "**returns** {}\n\n".format(formatTextContent(content))
+                text += "\n**returns** {}\n\n".format(formatTextContent(content))
         throwsTags = [blocktag for blocktag in blocktags if blocktag.getName() == "throws"]
         if len(throwsTags) > 0:
             text += "**throws**\n\n"
@@ -216,7 +215,7 @@ class Wiki:
                     text += "* {}\n".format(formatTextContent(content))
         sinceTag = [blocktag for blocktag in blocktags if blocktag.getName() == "since"]
         if len(sinceTag) > 0:
-            text += "**since** {}\n\n".format(sinceTag[0].getText())
+            text += "\n**since** {}\n\n".format(sinceTag[0].getText())
         deprecatedTag = [blocktag for blocktag in blocktags if blocktag.getName() == "deprecated"]
         if len(deprecatedTag) > 0:
             content = deprecatedTag.getText().getContent()
