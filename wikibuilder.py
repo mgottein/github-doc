@@ -206,9 +206,12 @@ class Wiki:
         if isinstance(link, StringLink):
             return "\"{}\"".format(link.getStr())
         elif isinstance(link, HtmlLink):
-            return "({})[{}]".format(link.getLabel(), link.getHref())
+            return "[{}]({})".format(link.getLabel(), link.getHref())
         elif isinstance(link, JavadocLink):
-            return "(Javadoc Link)"
+            if link.getJavadoc():
+                return "(Javadoc Link Evaluated)"
+            else:
+                return "(Javadoc Link Unevaluated)"
         else:
             return ""
     
