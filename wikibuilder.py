@@ -204,7 +204,13 @@ class Wiki:
     def formatTag(self, blocktags, italic=False):
         text = ""
         def formatTextContent(content):
-            return str(content)
+            text = ""
+            for something in content:
+                if isinstance(something, basestring):
+                    text += something
+                else:
+                    text += "(Inline tag here)"
+            return text
 
         authorTag = [blocktag for blocktag in blocktags if blocktag.getName() == "author"]
         if len(authorTag) > 0:
@@ -220,7 +226,7 @@ class Wiki:
                 if len(content) > 0:
                     first = re.split('\s+', content[0])
                     var = first[0]
-                    text += "* `{}` - {}{}\n".format(var, first[1:], formatTextContent(content[1:]))
+                    text += "* `{}` - {}{}\n".format(var, ' '.join(first[1:]), formatTextContent(content[1:]))
         returnTag = [blocktag for blocktag in blocktags if blocktag.getName() == "return"]
         if len(returnTag) > 0:
             content = returnTag[0].getText().getContent()
@@ -234,7 +240,7 @@ class Wiki:
                 if len(content) > 0:
                     first = re.split('\s+', content[0])
                     typ = first[0]
-                    text += "* `{}` {}{}\n".format(typ, first[1:], formatTextContent(content[1:]))
+                    text += "* `{}` {}{}\n".format(typ, ' '.join(first[1:]), formatTextContent(content[1:]))
         seeTags = [blocktag for blocktag in blocktags if blocktag.getName() == "see"]
         if len(seeTags) > 0:
             text += "**see**\n"
