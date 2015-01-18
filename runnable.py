@@ -2,10 +2,10 @@ from os import path
 from javadoc_parser import *
 from wikibuilder import *
 
-APPNAME = 'testapp'
-REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
-
-if __name__ == "__main__":
+def mapwiki():
+    APPNAME = 'testapp'
+    REPODIR = path.join(path.dirname(path.realpath(__file__)), APPNAME)
+    
     graph = JavadocGraph(REPODIR)
     
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
@@ -26,3 +26,6 @@ if __name__ == "__main__":
     
     for topLevelClass in graph.getTopLevelClasses():
         genClass(topLevelClass, '')
+
+if __name__ == "__main__":
+    mapwiki()

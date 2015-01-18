@@ -2,7 +2,6 @@ import os
 import fileinput
 import distutils.core
 
-from runnable import APPNAME, REPODIR
 from markup_formatter import *
 from javadoc_parser import *
 import markup_formatter
@@ -12,6 +11,8 @@ from xml.dom import HierarchyRequestErr
 Class to create and customize the Wiki
 '''
 class Wiki:
+    APPNAME = 'testapp'
+    REPODIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), APPNAME)
     
     '''
     Initialize wiki with working directory and call create
@@ -41,7 +42,7 @@ class Wiki:
         # Copy template directory
         distutils.dir_util.copy_tree(src, dest)
         
-        self.setTemplate('title', APPNAME)
+        self.setTemplate('title', self.APPNAME)
         self.setTemplate('readme', self.getReadme())
         #self.createPage('_SIDEBAR', '> [Home](Home)\n\n\n')
     
@@ -120,7 +121,7 @@ class Wiki:
     Return project readme file
     '''
     def getReadme(self):
-        path = os.path.join(REPODIR, 'README.md')
+        path = os.path.join(self.REPODIR, 'README.md')
         if os.path.isfile(path):
             readmeFile = open(path, 'r')
             readme = readmeFile.read()
