@@ -11,14 +11,13 @@ from xml.dom import HierarchyRequestErr
 Class to create and customize the Wiki
 '''
 class Wiki:
-    APPNAME = 'testapp'
-    REPODIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), APPNAME)
-    
     '''
     Initialize wiki with working directory and call create
     '''
-    def __init__(self, graph, wikidir):
-        self.WIKIDIR = wikidir
+    def __init__(self, appname, repodir, graph, wikidir):
+        self.appname = appname
+        self.repodir = repodir
+        self.wikidir = wikidir
         self.graph = graph
         self.create()
         self.pageName = None
@@ -29,7 +28,7 @@ class Wiki:
     '''
     def create(self):      
         src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wiki-template')
-        dest = self.WIKIDIR
+        dest = self.wikidir
         if not os.path.exists(dest):
             os.makedirs(dest)        
         # Remove existing files
@@ -44,15 +43,15 @@ class Wiki:
         # Copy template directory
         distutils.dir_util.copy_tree(src, dest)
         
-        #self.setTemplate('title', self.APPNAME)
-        #self.setTemplate('readme', self.getReadme())
+        self.setTemplate('title', self.appname)
+        self.setTemplate('readme', self.getReadme())
         #self.createPage('_SIDEBAR', '> [Home](Home)\n\n\n')
     
     '''
     Create a new wiki page
     '''
     def createPage(self):
-        file = open(os.path.join(self.WIKIDIR, self.pageName), 'w')
+        file = open(os.path.join(self.wikidir, self.pageName), 'w')
         file.write(self.text)
         file.close()
         self.pageName = None
@@ -63,7 +62,7 @@ class Wiki:
     '''
     def appendTitlePage(self, title, text):
         titlemod = title + '.md'
-        file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
+        file = open(os.path.join(self.wikidir, titlemod), 'a')
         file.write(text)
         file.close()
 
@@ -116,7 +115,7 @@ class Wiki:
     Return project readme file
     '''
     def getReadme(self):
-        path = os.path.join(self.REPODIR, 'README.md')
+        path = os.path.join(self.repodir, 'README.md')
         if os.path.isfile(path):
             readmeFile = open(path, 'r')
             readme = readmeFile.read()
@@ -227,14 +226,16 @@ class Wiki:
     Modify a template tag to be a custom value
     '''
 
-    '''
     def setTemplate(self, tag, text):
         if isinstance(text, list):
             text = '\n'.join(text)
-        for title in os.listdir(self.WIKIDIR):
-            file = os.path.join(self.WIKIDIR, title)
-            strbuild = '{{ %s }}' % tag
-            for line in fileinput.FileInput(file, inplace=1):
-                line = line.replace(strbuild, text)
-                print line,
-    '''
+        for title in ["HOME.md", "README.md"]:
+            f = os.path.join(self.wikidir, title)
+            if os.path.isfile(f):
+                strbuild = '{{ %s }}' % tag
+                h = open(f, 'r')
+                contents = h.read()
+                contents = contents.replace(strbuild, text)
+                h.close()
+                h = open(f, 'w')
+                h.write(contents)

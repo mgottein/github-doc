@@ -8,7 +8,7 @@ if __name__ == "__main__":
     REPODIR = os.path.expanduser('~/mhacks-demo')
     wikidir = os.path.expanduser('~/mhacks-demo.wiki')
     graph = JavadocGraph(REPODIR)
-    wiki = Wiki(graph, wikidir)
+    wiki = Wiki(APPNAME, REPODIR, graph, wikidir)
     def genClass(classNode, pre):
         def sourceSort(a, b):
             aVal = 1
