@@ -49,8 +49,8 @@ class Wiki:
     '''
     Append item to wiki page
     '''
-    def appendPage(self, title, text):
-        titlemod = title + '.md'
+    def appendPage(self, cls, text):
+        titlemod = cls.getSourceLine().getName() + '.md'
         file = open(os.path.join(self.WIKIDIR, titlemod), 'a')
         file.write(text)
         file.close()
@@ -81,10 +81,7 @@ class Wiki:
             pass
         text += self.mTags(javadoc.blockTags, True)
         text += self.mSource(javadoc.sourceLine.sourceLine)
-        if currentClass.blockTags or currentClass.mainDesc:
-            self.appendPage(currentClass, text)
-        else:
-            self.appendPage(javadoc.sourceLine.name, text)
+        self.appendPage(currentClass, text)
     
     '''
     Add a field to the wiki
@@ -97,10 +94,7 @@ class Wiki:
         text += self.mType(javadoc.sourceLine.type)
         text += self.mTags(javadoc.blockTags, True)
         text += self.mSource(javadoc.sourceLine.sourceLine)
-        if currentClass.blockTags or currentClass.mainDesc:
-            self.appendPage(currentClass, text)
-        else:
-            self.appendPage(javadoc.sourceLine.name, text)
+        self.appendPage(currentClass, text)
     
     '''
     Markdown source

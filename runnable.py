@@ -31,14 +31,17 @@ if __name__ == '__main__':
     wikidir = os.path.join(REPODIR, (APPNAME + '.wiki'))
     wiki = Wiki(wikidir)
     
-    def genClass(classNode):
+    def genClass(classNode, pre):
+        #print "{}{}".format(pre, classNode.getSourceLine().getName())
         wiki.buildClass(classNode)
         for methodNode in graph.getMethods(classNode):
             wiki.buildMethod(methodNode, classNode)
+            #print "{}\t{}".format(pre, methodNode.getSourceLine().getName())
         for fieldNode in graph.getFields(classNode):
             wiki.buildField(fieldNode, classNode)
+            #print "{}\t{}".format(pre, fieldNode.getSourceLine().getName())
         for innerClassNode in graph.getInnerClasses(classNode):
-            genClass(innerClassNode)
+            genClass(innerClassNode, "{}\t".format(pre))
     
     for topLevelClass in graph.getTopLevelClasses():
-        genClass(topLevelClass)
+        genClass(topLevelClass, '')
