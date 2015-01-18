@@ -133,18 +133,56 @@ class Wiki:
     '''
     Format tags
     '''
-    def formatTag(self, blockTags, italic=False):
-        text = ''
-        for tag in blockTags:
-            text += (bold(tag.name.upper()))
-            for content in tag.text.content:            
-                if italic and tag.name.upper() == 'PARAM':
-                    content = str(content).split()
-                    text += ('\t*{}*, {}\n\n').format(content[0], ' '.join(content[1:]))
-                else:
-                    text += ('\t' + str(content) + '\n')
+    def formatTag(self, blocktags, italic=False):
+        text = ""
+        def formatTextContent(content):
+            return str(content)
+
+        authorTag = [blocktag for blocktag in blocktags if blocktag.getName() == "author"]
+        if len(authorTag) > 0:
+            text += "###### Authored by {}\n".format(authorTag[0].getText())
+        versionTag = [blocktag for blocktag in blocktags if blocktag.getName() == "version"]
+        if len(versionTag) > 0:
+            text += "Version {}\n".format(versionTag[0].getText())
+        paramTags = [blocktag for blocktag in blocktags if blocktag.getName() == "param"]
+        if len(paramTags) > 0:
+            text += "**params**\n"
+            for paramTag in paramTags:
+                content = paramTag.getText().getContent()
+                if len(content) > 0:
+                    first = re.split('\s+', content[0])
+                    var = first[0]
+                    text += "* `{}` - {}{}\n".format(var, first[1:], formatTextContent(content[1:]))
+        returnTag = [blocktag for blocktag in blocktags if blocktag.getName() == "return"]
+        if len(returnTag) > 0:
+            content = returnTag[0].getText().getContent()
+            if len(content) > 0:
+                text += "**returns** {}\n".format(formatTextContent(content))
+        throwsTags = [blocktag for blocktag in blocktags if blocktag.getName() == "throws"]
+        if len(throwsTags) > 0:
+            text += "**throws**\n"
+            for throwsTag in throwsTags:
+                content = throwsTag.getText().getContent()
+                if len(content) > 0:
+                    first = re.split('\s+', content[0])
+                    typ = first[0]
+                    text += "* `{}` {}{}\n".format(typ, first[1:], formatTextContent(content[1:]))
+        seeTags = [blocktag for blocktag in blocktags if blocktag.getName() == "see"]
+        if len(seeTags) > 0:
+            text += "**see**\n"
+            for seeTag in seeTags:
+                content = seeTag.getText().getContent()
+                if len(content) > 0:
+                    text += "* {}\n".format(formatTextContent(content))
+        sinceTag = [blocktag for blocktag in blocktags if blocktag.getName() == "since"]
+        if len(sinceTag) > 0:
+            text += "**since** {}\n".format(sinceTag[0].getText())
+        deprecatedTag = [blocktag for blocktag in blocktags if blocktag.getName() == "deprecated"]
+        if len(deprecatedTag) > 0:
+            content = deprecatedTag.getText().getContent()
+            if len(content) > 0:
+                text += "~~deprecated~~ {}\n".format(formatTextContent(content))
         return text
-    
     '''
     Copy template files to wiki directory
     '''
